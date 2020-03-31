@@ -1,4 +1,5 @@
 gmail.com
+mail.google.com
 
 facebook.com
 fb.com
@@ -11,11 +12,16 @@ skeptics.stackexchange.com
 
 fidelity.com
 
-wsj.com
-nationalreview.com
-news.google.com
 drudgereport.com
 fivethirtyeight.com
+theatlantic.com
+nytimes.com
+washingtonpost.com
+slate.com
+vox.com
+wsj.com
+news.google.com
+nationalreview.com
 espn.com
 
 homedepot.com
