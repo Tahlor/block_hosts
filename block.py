@@ -2,18 +2,19 @@ from pathlib import Path
 import argparse
 import sys
 import os
+import socket
 
 root = Path(os.path.dirname(os.path.realpath(__file__)))
 
 suffix = """
 127.0.0.1	localhost
-127.0.1.1	Galois
+127.0.1.1	{}
 
 ::1     ip6-localhost ip6-loopback
 fe00::0 ip6-localnet
 ff00::0 ip6-mcastprefix
 ff02::1 ip6-allnodes
-ff02::2 ip6-allrouters"""
+ff02::2 ip6-allrouters""".format(socket.gethostname())
 
 
 def get_sites():

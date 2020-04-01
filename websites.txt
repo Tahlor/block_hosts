@@ -6,6 +6,7 @@ fb.com
 linkedin.com
 reddit.com
 youtube.com
+twitter.com
 
 stackexchange.com
 skeptics.stackexchange.com
