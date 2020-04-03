@@ -18,14 +18,14 @@ content.txt
 credentials.json
 credentials*
 *credentials*
-.git*/
+.gitignore/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 
-# C extensions
+# C ext
 *.so
 
 # Distribution / packaging

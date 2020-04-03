@@ -1,0 +1,4 @@
+# Crontab
+
+0 * * * * python3 /home/taylor/bashrc/ext/block_hosts/block.py --UNBLOCK
+5 * * * * python3 /home/taylor/bashrc/ext/block_hosts/block.py
