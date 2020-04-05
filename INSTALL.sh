@@ -1,5 +1,5 @@
 
-UNBLOCK="0 * * * * python3 /home/$USER/bashrc/ext/block_hosts/block.py --UNBLOCK"
+UNBLOCK="0 * * * * python3 /home/$USER/bashrc/ext/block_hosts/block.py --unblock"
 BLOCK="5 * * * * python3 /home/$USER/bashrc/ext/block_hosts/block.py"
 
 crontab_file=$(sudo crontab -l)

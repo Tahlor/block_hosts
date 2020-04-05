@@ -28,6 +28,8 @@ wsj.com
 news.google.com
 nationalreview.com
 espn.com
+ksl.com
+deseretnews.com
 
 homedepot.com
 lowes.com
