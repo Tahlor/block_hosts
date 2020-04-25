@@ -22,6 +22,3 @@
 # m h  dom mon dow   command
 
 @reboot sudo sh -c "echo XHC > /proc/acpi/wakeup"
-
-0 * * * * python3 /home/taylor/bashrc/ext/block_hosts/block.py --UNBLOCK
-5 * * * * python3 /home/taylor/bashrc/ext/block_hosts/block.py
