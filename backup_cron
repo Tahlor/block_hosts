@@ -20,9 +20,3 @@
 # For more information see the manual pages of crontab(5) and cron(8)
 # 
 # m h  dom mon dow   command
-
-0 * * * * python3 /media/data/GitHub/personal_projects/block_hosts/block.py --unblock
-5 * * * * python3 /media/data/GitHub/personal_projects/block_hosts/block.py
-
-# Test
-#* * * * * python3 /media/data/GitHub/personal_projects/block_hosts/block.py 

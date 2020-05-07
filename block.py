@@ -1,3 +1,4 @@
+from tqdm import tqdm
 from pathlib import Path
 import argparse
 import sys
@@ -67,17 +68,30 @@ def remove_from_cron():
     output, error = process.communicate()
     new_cron_text = output.decode()    
     install_new_crontab(new_cron_text)
-    
+   
+def sleeper(minutes):
+    factor = 20
+    for i in tqdm(range(10*factor)):
+        sleep(int(60/factor))
+
 def parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--unblock', action="store_true")
     parser.add_argument('--block', action="store_true")
     parser.add_argument('--off', action="store_true")
     parser.add_argument('--on', action="store_true") 
+    parser.add_argument('--ten', action="store_true") 
     opts = parser.parse_args()
 
     if opts.unblock:
         unblock_sites()
+    elif opts.ten:
+        print("Unblocking sites in 10 minutes")
+        sleeper(10)
+        unblock_sites()
+        os.system('spd-say "Websites have been unblocked"')
+        sleep(5*60)
+        block_sites()
     elif opts.off:
         unblock_sites()
         remove_from_cron()
