@@ -1,4 +1,3 @@
-from tqdm import tqdm
 from pathlib import Path
 import argparse
 import sys
@@ -6,6 +5,16 @@ import os
 import socket
 import subprocess
 from time import sleep
+
+try:
+    from tqdm import tqdm
+except:
+    def tqdm(x):
+        total = len(x)
+        for i,m in enumerate(x):
+            sys.stdout.write("Waiting progress: %d%%   \r" % (i/total*100) )
+            sys.stdout.flush()
+            yield m
 
 root = Path(os.path.dirname(os.path.realpath(__file__)))
 _root = root.as_posix()
@@ -46,6 +55,7 @@ def unblock_sites():
 def install_block_to_cron():
     process = subprocess.Popen(f"sudo -s bash {_root}/INSTALL.sh", stdout=subprocess.PIPE, shell=True)
     output, error = process.communicate()
+    print("block_hosts installed to crontab")
     #print("RESULT OF INSTALL")
     #print(output.decode())
 
@@ -68,7 +78,8 @@ def remove_from_cron():
     output, error = process.communicate()
     new_cron_text = output.decode()    
     install_new_crontab(new_cron_text)
-   
+    print("block_hosts removed from crontab")
+    
 def sleeper(minutes):
     factor = 20
     for i in tqdm(range(10*factor)):
@@ -98,6 +109,8 @@ def parser():
     elif opts.on:
         block_sites()
         install_block_to_cron()
+    elif opts.block:
+        block_sites()
     else:
         block_sites()
 

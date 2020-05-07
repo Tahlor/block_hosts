@@ -1,8 +1,7 @@
 #!/bin/bash
 LOCAL_USER="$(logname)"
-
-UNBLOCK="0 * * * * python3 /home/$LOCAL_USER/bashrc/ext/block_hosts/block.py --unblock"
-BLOCK="5 * * * * python3 /home/$LOCAL_USER/bashrc/ext/block_hosts/block.py"
+UNBLOCK="0 * * * * python3 /home/$LOCAL_USER/bashrc/ext/block_hosts/block.py --unblock >> /home/$LOCAL_USER/bashrc/ext/block_hosts/BLOCK.log 2>&1"
+BLOCK="5 * * * * python3 /home/$LOCAL_USER/bashrc/ext/block_hosts/block.py --block >> /home/$LOCAL_USER/bashrc/ext/block_hosts/BLOCK.log 2>&1"
 crontab_file=$(sudo crontab -l)
 echo "$crontab_file" > "/home/$LOCAL_USER/bashrc/ext/block_hosts/backup_cron"
 echo "$crontab_file" | grep "${BLOCK:10:100}" # struggles with asterisks

@@ -20,3 +20,6 @@
 # For more information see the manual pages of crontab(5) and cron(8)
 # 
 # m h  dom mon dow   command
+
+0 * * * * python3 /home/taylor/bashrc/ext/block_hosts/block.py --unblock >> /home/taylor/bashrc/ext/block_hosts/BLOCK.log 2>&1
+5 * * * * python3 /home/taylor/bashrc/ext/block_hosts/block.py --block >> /home/taylor/bashrc/ext/block_hosts/BLOCK.log 2>&1
