@@ -3,12 +3,16 @@ import argparse
 import sys
 import os
 import socket
+import subprocess
+from time import sleep
 
 root = Path(os.path.dirname(os.path.realpath(__file__)))
+_root = root.as_posix()
+os.chdir(_root)
 
 suffix = """
-127.0.0.1	localhost
-127.0.1.1	{}
+127.0.0.1    localhost
+127.0.1.1    {}
 
 ::1     ip6-localhost ip6-loopback
 fe00::0 ip6-localnet
@@ -38,15 +42,48 @@ def unblock_sites():
     with Path("/etc/hosts").open("w") as f:
         f.write(suffix)
 
+def install_block_to_cron():
+    process = subprocess.Popen(f"sudo -s bash {_root}/INSTALL.sh", stdout=subprocess.PIPE, shell=True)
+    output, error = process.communicate()
+    #print("RESULT OF INSTALL")
+    #print(output.decode())
 
+def get_crontab_text():
+    cron_text = "sudo crontab -l"
+    process = subprocess.Popen(cron_text, stdout=subprocess.PIPE, shell=True)
+    output, error = process.communicate()
+    return output.decode()
+    
+def install_new_crontab(new_cron_text):
+    with (root / "_my_cron").open("w") as f:
+        f.write(new_cron_text)
+    #process = subprocess.Popen(f"'{new_cron_text}' > {_root}/_my_cron", stdout=subprocess.PIPE, shell=True)
+    process = subprocess.call(f"sudo crontab {_root}/_my_cron", stdout=subprocess.PIPE, shell=True)
+    os.remove(f"{_root}/_my_cron")
+    
+def remove_from_cron():
+    remove_from_cron = "sudo crontab -l | sed '/block_hosts\/block\.py/d'"
+    process = subprocess.Popen(remove_from_cron, stdout=subprocess.PIPE, shell=True)
+    output, error = process.communicate()
+    new_cron_text = output.decode()    
+    install_new_crontab(new_cron_text)
+    
 def parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--unblock', action="store_true")
-    parser.add_argument('--block', action="store_true") # dummy argument
+    parser.add_argument('--block', action="store_true")
+    parser.add_argument('--off', action="store_true")
+    parser.add_argument('--on', action="store_true") 
     opts = parser.parse_args()
 
     if opts.unblock:
         unblock_sites()
+    elif opts.off:
+        unblock_sites()
+        remove_from_cron()
+    elif opts.on:
+        block_sites()
+        install_block_to_cron()
     else:
         block_sites()
 
