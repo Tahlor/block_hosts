@@ -73,13 +73,16 @@ def install_new_crontab(new_cron_text):
     os.remove(f"{_root}/_my_cron")
     
 def remove_from_cron():
-    remove_from_cron = "sudo crontab -l | sed '/block_hosts\/block\.py/d'"
+    remove_from_cron = "sudo crontab -l | sed '/PERSISTENT/p;/block_hosts\/block\.py /d'"
     process = subprocess.Popen(remove_from_cron, stdout=subprocess.PIPE, shell=True)
     output, error = process.communicate()
     new_cron_text = output.decode()    
     install_new_crontab(new_cron_text)
     print("block_hosts removed from crontab")
-    
+
+# 59 23 * * * python3 /home/taylor/bashrc/ext/block_hosts/block.py --on > /home/taylor/bashrc/ext/block_hosts/BLOCK.log 2>&1 # PERSISTENT  
+
+
 def sleeper(minutes):
     factor = 20
     for i in tqdm(range(10*factor)):

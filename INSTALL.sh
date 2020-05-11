@@ -1,5 +1,8 @@
 #!/bin/bash
 LOCAL_USER="$(logname)"
+
+# 59 23 * * * python3 /home/taylor/bashrc/ext/block_hosts/block.py --on > /home/taylor/bashrc/ext/block_hosts/BLOCK.log 2>&1 # PERSISTENT
+
 UNBLOCK="0 * * * * python3 /home/$LOCAL_USER/bashrc/ext/block_hosts/block.py --unblock >> /home/$LOCAL_USER/bashrc/ext/block_hosts/BLOCK.log 2>&1"
 BLOCK="5 * * * * python3 /home/$LOCAL_USER/bashrc/ext/block_hosts/block.py --block >> /home/$LOCAL_USER/bashrc/ext/block_hosts/BLOCK.log 2>&1"
 crontab_file=$(sudo crontab -l)
@@ -15,13 +18,18 @@ if [ $? -ne 0 ]; then
     sudo crontab -l > mycron
   fi
 
-  #echo new cron into cron file
+  # Check if ends with double newline
+  if ! [ -z "$(tail -n 1 mycron)" ]; then
+        printf "\n" >> mycron
+  fi
+
+  # echo new cron into cron file
   echo "$UNBLOCK" >> mycron
   echo "$BLOCK" >> mycron
 
   #install new cron file
   sudo crontab mycron
-  rm mycron
+  #rm mycron
 else
   echo "already installed"
 fi
