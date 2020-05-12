@@ -52,8 +52,8 @@ def unblock_sites():
     with Path("/etc/hosts").open("w") as f:
         f.write(suffix)
 
-def install_block_to_cron():
-    process = subprocess.Popen(f"sudo -s bash {_root}/INSTALL.sh", stdout=subprocess.PIPE, shell=True)
+def install_block_to_cron(user=""):
+    process = subprocess.Popen(f"sudo -s bash {_root}/INSTALL.sh {user}", stdout=subprocess.PIPE, shell=True)
     output, error = process.communicate()
     print("block_hosts installed to crontab")
     #print("RESULT OF INSTALL")
@@ -95,6 +95,8 @@ def parser():
     parser.add_argument('--off', action="store_true")
     parser.add_argument('--on', action="store_true") 
     parser.add_argument('--ten', action="store_true") 
+    parser.add_argument('--user', default="taylor") 
+
     opts = parser.parse_args()
 
     if opts.unblock:
@@ -111,7 +113,7 @@ def parser():
         remove_from_cron()
     elif opts.on:
         block_sites()
-        install_block_to_cron()
+        install_block_to_cron(opts.user)
     elif opts.block:
         block_sites()
     else:

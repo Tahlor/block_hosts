@@ -1,7 +1,8 @@
 #!/bin/bash
-LOCAL_USER="$(logname)"
 
-# 59 23 * * * python3 /home/taylor/bashrc/ext/block_hosts/block.py --on > /home/taylor/bashrc/ext/block_hosts/BLOCK.log 2>&1 # PERSISTENT
+LOCAL_USER=${1-$(logname)}
+
+# 59 23 * * * python3 /home/taylor/bashrc/ext/block_hosts/block.py --on --user taylor > /home/taylor/bashrc/ext/block_hosts/BLOCK.log 2>&1 # PERSISTENT
 
 UNBLOCK="0 * * * * python3 /home/$LOCAL_USER/bashrc/ext/block_hosts/block.py --unblock >> /home/$LOCAL_USER/bashrc/ext/block_hosts/BLOCK.log 2>&1"
 BLOCK="5 * * * * python3 /home/$LOCAL_USER/bashrc/ext/block_hosts/block.py --block >> /home/$LOCAL_USER/bashrc/ext/block_hosts/BLOCK.log 2>&1"
