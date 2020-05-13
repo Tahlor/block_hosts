@@ -96,6 +96,7 @@ def parser():
     parser.add_argument('--on', action="store_true") 
     parser.add_argument('--ten', action="store_true") 
     parser.add_argument('--user', default="taylor") 
+    parser.add_argument('--youtube', default=True) 
 
     opts = parser.parse_args()
 

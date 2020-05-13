@@ -23,3 +23,6 @@
 MAILTO=tahlor@gmail.com
 
 59 23 * * * python3 /home/taylor/bashrc/ext/block_hosts/block.py --on --user taylor > /home/taylor/bashrc/ext/block_hosts/BLOCK.log 2>&1 # PERSISTENT
+
+0 * * * * python3 /home/taylor/bashrc/ext/block_hosts/block.py --unblock >> /home/taylor/bashrc/ext/block_hosts/BLOCK.log 2>&1
+5 * * * * python3 /home/taylor/bashrc/ext/block_hosts/block.py --block >> /home/taylor/bashrc/ext/block_hosts/BLOCK.log 2>&1
