@@ -31,8 +31,8 @@ ff02::1 ip6-allnodes
 ff02::2 ip6-allrouters""".format(socket.gethostname())
 
 
-def get_sites():
-    with (root / "websites.txt").open("r") as f:
+def get_sites(website_file="websites.txt"):
+    with (root / website_file).open("r") as f:
         return f.read()
 
 
@@ -49,7 +49,11 @@ def block_sites():
 
 def unblock_sites():
     print("unblocking sites...")
+    websites = get_sites("always_block_websites.txt").split()
     with Path("/etc/hosts").open("w") as f:
+        for w in websites:
+            f.write("127.0.0.1 {} \n".format(w))
+            f.write("127.0.0.1 www.{} \n".format(w))
         f.write(suffix)
 
 def install_block_to_cron(user=""):
