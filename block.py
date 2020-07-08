@@ -104,7 +104,7 @@ def parser():
     parser.add_argument('--block', action="store_true")
     parser.add_argument('--off', action="store_true")
     parser.add_argument('--on', action="store_true")
-    parser.add_argument('--break_mode', nargs='?', const=40, type=int)
+    parser.add_argument('--break_mode', nargs='?', const=60, type=int)
     parser.add_argument('--user', default="taylor")
     parser.add_argument('--youtube', default=True)
     parser.add_argument('--site', default=None) 
