@@ -116,6 +116,7 @@ def parser():
         unblock_sites()
     elif opts.break_mode is not None:
         while True:
+                block_sites()
                 print("Unblocking sites in {} minutes".format(opts.break_mode))
                 sleeper(opts.break_mode)
                 os.system('spd-say "{}"'.format(break_message))

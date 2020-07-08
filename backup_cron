@@ -22,7 +22,7 @@
 # m h  dom mon dow   command
 MAILTO=tahlor@gmail.com
 
-@reboot bash /home/taylor/bashrc/super/map_super.sh
+@reboot sleep 60 && bash /home/taylor/bashrc/super/map_super.sh
 
 59 23 * * * python3 /home/taylor/bashrc/ext/block_hosts/block.py --on --user taylor > /home/taylor/bashrc/ext/block_hosts/BLOCK.log 2>&1 # PERSISTENT
 
