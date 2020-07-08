@@ -86,10 +86,9 @@ def remove_from_cron():
 
 # 59 23 * * * python3 /home/taylor/bashrc/ext/block_hosts/block.py --on > /home/taylor/bashrc/ext/block_hosts/BLOCK.log 2>&1 # PERSISTENT  
 
-
 def sleeper(minutes):
     factor = 20
-    for i in tqdm(range(10*factor)):
+    for i in tqdm(range(minutes*factor)):
         sleep(int(60/factor))
 
 def parser():
@@ -97,22 +96,27 @@ def parser():
     parser.add_argument('--unblock', action="store_true")
     parser.add_argument('--block', action="store_true")
     parser.add_argument('--off', action="store_true")
-    parser.add_argument('--on', action="store_true") 
-    parser.add_argument('--ten', action="store_true") 
-    parser.add_argument('--user', default="taylor") 
-    parser.add_argument('--youtube', default=True) 
+    parser.add_argument('--on', action="store_true")
+    parser.add_argument('--break_mode', nargs='?', const=40, type=int)
+    parser.add_argument('--user', default="taylor")
+    parser.add_argument('--youtube', default=True)
 
     opts = parser.parse_args()
 
+    break_message = "You earned a 5 minute break!"
     if opts.unblock:
         unblock_sites()
-    elif opts.ten:
-        print("Unblocking sites in 10 minutes")
-        sleeper(10)
-        unblock_sites()
-        os.system('spd-say "Websites have been unblocked"')
-        sleep(5*60)
-        block_sites()
+    elif opts.break_mode is not None:
+        while True:
+                print("Unblocking sites in {} minutes".format(opts.break_mode))
+                sleeper(opts.break_mode)
+                os.system('spd-say "{}"'.format(break_message))
+                input("You earned a 5 minute break!")
+                unblock_sites()
+                os.system('spd-say "Websites have been unblocked"')
+                sleeper(5)
+                block_sites()
+                os.system('spd-say "Break is over!"')
     elif opts.off:
         unblock_sites()
         remove_from_cron()
