@@ -91,6 +91,13 @@ def sleeper(minutes):
     for i in tqdm(range(minutes*factor)):
         sleep(int(60/factor))
 
+def unblock_one(item="youtube"):
+    # FILTER/DELETE LINES WITH "ITEM" IN THEM
+    command = f"sudo -s sed -i '/{item}/d' /etc/hosts" # -i does it inplace
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
+    output, error = process.communicate()
+
+
 def parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--unblock', action="store_true")
@@ -100,6 +107,7 @@ def parser():
     parser.add_argument('--break_mode', nargs='?', const=40, type=int)
     parser.add_argument('--user', default="taylor")
     parser.add_argument('--youtube', default=True)
+    parser.add_argument('--site', default=None) 
 
     opts = parser.parse_args()
 
@@ -125,6 +133,12 @@ def parser():
         install_block_to_cron(opts.user)
     elif opts.block:
         block_sites()
+    elif opts.site:
+        unblock_one(opts.site)
+    elif opts.youtube:
+        unblock_one("youtube")
+    elif opts.unblock:
+        unblock_sites()
     else:
         block_sites()
 
