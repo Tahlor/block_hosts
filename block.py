@@ -106,7 +106,7 @@ def parser():
     parser.add_argument('--on', action="store_true")
     parser.add_argument('--break_mode', nargs='?', const=60, type=int)
     parser.add_argument('--user', default="taylor")
-    parser.add_argument('--youtube', default=True)
+    parser.add_argument('--youtube', nargs='?', const="youtube", type=str)
     parser.add_argument('--site', default=None) 
 
     opts = parser.parse_args()
@@ -122,10 +122,13 @@ def parser():
                 os.system('spd-say "{}"'.format(break_message))
                 input("You earned a 5 minute break!")
                 unblock_sites()
-                os.system('spd-say "Websites have been unblocked"')
-                sleeper(5)
+                try:
+                    # Allow user to end break early
+                    sleeper(5)
+                except:
+                    pass
                 block_sites()
-                os.system('spd-say "Break is over!"')
+                os.system('spd-say "Blocking websites"')
     elif opts.off:
         unblock_sites()
         remove_from_cron()
@@ -136,8 +139,8 @@ def parser():
         block_sites()
     elif opts.site:
         unblock_one(opts.site)
-    elif opts.youtube:
-        unblock_one("youtube")
+    elif opts.youtube is not None:
+        unblock_one(opts.youtube)
     elif opts.unblock:
         unblock_sites()
     else:
