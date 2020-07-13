@@ -98,10 +98,11 @@ def unblock_one(item="youtube"):
     output, error = process.communicate()
 
 def unblock_timer(duration=5):
-    input("You got a {} minute break!".format(duration))
-    unblock_sites()
     try:
     # Allow user to end break early
+        input("You got a {} minute break!".format(duration))
+        unblock_sites()
+
         sleeper(duration)
     except:
         pass
