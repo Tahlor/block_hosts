@@ -97,6 +97,15 @@ def unblock_one(item="youtube"):
     process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
     output, error = process.communicate()
 
+def unblock_timer(duration=5):
+    input("You got a {} minute break!".format(duration))
+    unblock_sites()
+    try:
+    # Allow user to end break early
+        sleeper(duration)
+    except:
+        pass
+
 
 def parser():
     parser = argparse.ArgumentParser()
@@ -115,18 +124,13 @@ def parser():
     if opts.unblock:
         unblock_sites()
     elif opts.break_mode is not None:
+        unblock_timer()
         while True:
                 block_sites()
                 print("Unblocking sites in {} minutes".format(opts.break_mode))
                 sleeper(opts.break_mode)
                 os.system('spd-say "{}"'.format(break_message))
-                input("You earned a 5 minute break!")
-                unblock_sites()
-                try:
-                    # Allow user to end break early
-                    sleeper(5)
-                except:
-                    pass
+                unblock_timer()
                 block_sites()
                 os.system('spd-say "Blocking websites"')
     elif opts.off:
