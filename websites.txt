@@ -8,8 +8,8 @@ facebook.com
 fb.com
 linkedin.com
 reddit.com
-youtube.com
-youtu.be
+#youtube.com
+#youtu.be
 twitter.com
 
 stackexchange.com

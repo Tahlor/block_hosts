@@ -128,7 +128,7 @@ def parser():
         unblock_timer()
         while True:
                 block_sites()
-                print("Unblocking sites in {} minutes".format(opts.break_mode))
+                print("Blocking sites for {} minutes".format(opts.break_mode))
                 sleeper(opts.break_mode)
                 os.system('spd-say "{}"'.format(break_message))
                 unblock_timer()
