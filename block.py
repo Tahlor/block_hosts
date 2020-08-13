@@ -98,14 +98,34 @@ def unblock_one(item="youtube"):
     output, error = process.communicate()
 
 def unblock_timer(duration=5):
+    break_message = "You got a {} minute break!".format(duration)
     try:
     # Allow user to end break early
-        input("You got a {} minute break!".format(duration))
+        os.system('spd-say "{}"'.format(break_message))
+        input(break_message)
         unblock_sites()
 
         sleeper(duration)
     except:
         pass
+
+
+num2words = {1: 'One', 2: 'Two', 3: 'Three', 4: 'Four', 5: 'Five', \
+             6: 'Six', 7: 'Seven', 8: 'Eight', 9: 'Nine', 10: 'Ten', \
+            11: 'Eleven', 12: 'Twelve', 13: 'Thirteen', 14: 'Fourteen', \
+            15: 'Fifteen', 16: 'Sixteen', 17: 'Seventeen', 18: 'Eighteen', \
+            19: 'Nineteen', 20: 'Twenty', 30: 'Thirty', 40: 'Forty', \
+            50: 'Fifty', 60: 'Sixty', 70: 'Seventy', 80: 'Eighty', \
+            90: 'Ninety', 0: 'Zero'}
+
+def n2w(n):
+    try:
+        return num2words[n]
+    except KeyError:
+        try:
+            return num2words[n-n%10] + num2words[n%10].lower()
+        except KeyError:
+            return 5
 
 
 def parser():
@@ -121,19 +141,18 @@ def parser():
 
     opts = parser.parse_args()
 
-    break_message = "You earned a 5 minute break!"
+    break_message = "You got a {} minute break!"
     if opts.unblock:
         unblock_sites()
     elif opts.break_mode is not None:
         unblock_timer()
         while True:
                 block_sites()
+                os.system('spd-say "Blocking websites"')
                 print("Blocking sites for {} minutes".format(opts.break_mode))
                 sleeper(opts.break_mode)
                 os.system('spd-say "{}"'.format(break_message))
                 unblock_timer()
-                block_sites()
-                os.system('spd-say "Blocking websites"')
     elif opts.off:
         unblock_sites()
         remove_from_cron()
