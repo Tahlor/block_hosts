@@ -39,7 +39,7 @@ def get_sites(website_file="websites.txt"):
 def block_sites():
     print("blocking sites...")
     websites = get_sites().split()
-    print(websites)
+    #print(websites)
     with Path("/etc/hosts").open("w") as f:
         for w in websites:
             if w[0] != "#":

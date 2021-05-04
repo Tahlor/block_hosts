@@ -29,7 +29,7 @@ wsj.com
 news.google.com
 nationalreview.com
 espn.com
-ksl.com
+#ksl.com
 deseretnews.com
 
 homedepot.com
