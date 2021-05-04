@@ -1,3 +1,6 @@
+backup_cron
+_my_cron
+
 # Passwords and cookies
 password.txt
 username.txt
@@ -18,14 +21,14 @@ content.txt
 credentials.json
 credentials*
 *credentials*
-.git*/
+.gitignore/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 
-# C extensions
+# C ext
 *.so
 
 # Distribution / packaging

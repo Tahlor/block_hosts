@@ -1,47 +1,50 @@
 
-#gmail.com
-#mail.google.com
-#accounts.google.com
-#goog.le
+gmail.com
+mail.google.com
+accounts.google.com
+goog.le
 
-#facebook.com
-#fb.com
-#linkedin.com
-#reddit.com
+facebook.com
+fb.com
+linkedin.com
+reddit.com
 #youtube.com
 #youtu.be
-#twitter.com
+twitter.com
 
 stackexchange.com
 skeptics.stackexchange.com
+quora.com
 
 fidelity.com
 
-#drudgereport.com
-#fivethirtyeight.com
-#theatlantic.com
-#nytimes.com
-#washingtonpost.com
-#slate.com
-#vox.com
-#wsj.com
-#news.google.com
-#nationalreview.com
-#espn.com
+drudgereport.com
+fivethirtyeight.com
+theatlantic.com
+nytimes.com
+washingtonpost.com
+slate.com
+vox.com
+wsj.com
+news.google.com
+nationalreview.com
+espn.com
+ksl.com
+deseretnews.com
 
 homedepot.com
 lowes.com
 amazon.com
-#walmart.com
-#groupon.com
-#aliexpress.com
-#ebay.com
-#slickdeals.net
+walmart.com
+groupon.com
+aliexpress.com
+ebay.com
+slickdeals.net
 
-#gameinfo.io
-#gamepress.gg
-#thesilphroad.com
-#pokeassistant.com
-#pokemongohub.net
+gameinfo.io
+gamepress.gg
+thesilphroad.com
+pokeassistant.com
+pokemongohub.net
 
-#arcgis.com
+arcgis.com
