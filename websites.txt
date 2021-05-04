@@ -48,3 +48,6 @@ pokeassistant.com
 pokemongohub.net
 
 arcgis.com
+
+fife.entrydns.org
+
