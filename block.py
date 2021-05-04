@@ -39,10 +39,12 @@ def get_sites(website_file="websites.txt"):
 def block_sites():
     print("blocking sites...")
     websites = get_sites().split()
+    print(websites)
     with Path("/etc/hosts").open("w") as f:
         for w in websites:
-            f.write("127.0.0.1 {} \n".format(w))
-            f.write("127.0.0.1 www.{} \n".format(w))
+            if w[0] != "#":
+                f.write("127.0.0.1 {} \n".format(w))
+                f.write("127.0.0.1 www.{} \n".format(w))
 
         f.write("\n" + suffix)
 

@@ -8,7 +8,7 @@ UNBLOCK="0 * * * * python3 /home/$LOCAL_USER/bashrc/ext/block_hosts/block.py --u
 BLOCK="5 * * * * python3 /home/$LOCAL_USER/bashrc/ext/block_hosts/block.py --block >> /home/$LOCAL_USER/bashrc/ext/block_hosts/BLOCK.log 2>&1"
 crontab_file=$(sudo crontab -l)
 echo "$crontab_file" > "/home/$LOCAL_USER/bashrc/ext/block_hosts/backup_cron"
-echo "$crontab_file" | grep "${BLOCK:10:100}" # struggles with asterisks
+echo "$crontab_file" | grep -F "${BLOCK:10:100}" # ignore exact timing or if commented out etc.
 
 # If grep doesn't find it
 if [ $? -ne 0 ]; then
