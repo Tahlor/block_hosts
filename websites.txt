@@ -31,6 +31,8 @@ nationalreview.com
 espn.com
 #ksl.com
 deseretnews.com
+heraldextra.com
+universe.byu.edu
 
 homedepot.com
 lowes.com
@@ -49,5 +51,8 @@ pokemongohub.net
 
 arcgis.com
 
-fife.entrydns.org
+#fife.entrydns.org
 
+zillow.com
+redfin.com
+realtor.com
