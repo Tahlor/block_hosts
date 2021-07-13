@@ -20,7 +20,7 @@ root = Path(os.path.dirname(os.path.realpath(__file__)))
 _root = root.as_posix()
 os.chdir(_root)
 
-suffix = """
+prefix = """
 127.0.0.1    localhost
 127.0.1.1    {}
 
@@ -41,22 +41,23 @@ def block_sites():
     websites = get_sites().split()
     #print(websites)
     with Path("/etc/hosts").open("w") as f:
+        f.write("\n" + prefix)
+
         for w in websites:
             if w[0] != "#":
                 f.write("127.0.0.1 {} \n".format(w))
                 f.write("127.0.0.1 www.{} \n".format(w))
 
-        f.write("\n" + suffix)
 
 
 def unblock_sites():
     print("unblocking sites...")
     websites = get_sites("always_block_websites.txt").split()
     with Path("/etc/hosts").open("w") as f:
+        f.write(prefix)
         for w in websites:
             f.write("127.0.0.1 {} \n".format(w))
             f.write("127.0.0.1 www.{} \n".format(w))
-        f.write(suffix)
 
 def install_block_to_cron(user=""):
     process = subprocess.Popen(f"sudo -s bash {_root}/INSTALL.sh {user}", stdout=subprocess.PIPE, shell=True)
