@@ -1,3 +1,4 @@
+discord.com
 
 gmail.com
 mail.google.com
@@ -31,6 +32,7 @@ nationalreview.com
 espn.com
 #ksl.com
 deseretnews.com
+deseret.com
 heraldextra.com
 universe.byu.edu
 
@@ -45,8 +47,8 @@ slickdeals.net
 
 gameinfo.io
 gamepress.gg
-thesilphroad.com
 pokeassistant.com
+#thesilphroad.com
 pokemongohub.net
 
 arcgis.com

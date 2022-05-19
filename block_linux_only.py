@@ -1,4 +1,3 @@
-
 from pathlib import Path
 import argparse
 import sys
@@ -37,48 +36,25 @@ def get_sites(website_file="websites.txt"):
     with (root / website_file).open("r") as f:
         return f.read()
 
-WSL_HOSTS=["G1G2Q13"]
-
-def set_globals(linux=True):
-    global LINUX, HOSTS_FILE_PATH, FLUSH
-
-    if socket.gethostname() in WSL_HOSTS:
-        linux=False
-
-    if linux:
-        LINUX=True
-        HOSTS_FILE_PATH="/etc/hosts"
-        FLUSH=linux_flush
-    else:
-        LINUX=False
-        HOSTS_FILE_PATH=r"C:\Windows\System32\drivers\etc\hosts"
-        FLUSH=windows_flush
-
-def linux_flush():
-    pass
-
-def windows_flush():
-    #type blocked_hosts > hosts
-    subprocess.Popen(f"ipconfig /flushdns", stdout=subprocess.PIPE, shell=True)
 
 def block_sites():
     print("blocking sites...")
     websites = get_sites().split()
     #print(websites)
-    with Path(HOSTS_FILE_PATH).open("w") as f:
+    with Path("/etc/hosts").open("w") as f:
         f.write("\n" + prefix)
 
         for w in websites:
             if w[0] != "#":
                 f.write("127.0.0.1 {} \n".format(w))
                 f.write("127.0.0.1 www.{} \n".format(w))
-    FLUSH()
+
 
 
 def unblock_sites():
     print("unblocking sites...")
     websites = get_sites("always_block_websites.txt").split()
-    with Path( HOSTS_FILE_PATH).open("w") as f:
+    with Path("/etc/hosts").open("w") as f:
         f.write(prefix)
         for w in websites:
             f.write("127.0.0.1 {} \n".format(w))
@@ -169,8 +145,7 @@ def parser():
     parser.add_argument('--site', default=None) 
 
     opts = parser.parse_args()
-    set_globals()
-    
+
     break_message = "You got a {} minute break!"
     if opts.unblock:
         unblock_sites()
