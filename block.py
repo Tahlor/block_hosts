@@ -7,6 +7,14 @@ import socket
 import subprocess
 from time import sleep
 
+"""
+* Run from Windows Python not supported/tested
+* WSL block/unblock working with WUDO
+
+
+"""
+
+
 try:
     from tqdm import tqdm
 except:
@@ -40,7 +48,8 @@ def get_sites(website_file="websites.txt"):
 WSL_HOSTS=["G1G2Q13"]
 
 def set_globals(linux=True):
-    global LINUX, HOSTS_FILE_PATH, FLUSH
+    """ Run from Windows Python not supported/tested """
+    global LINUX, HOSTS_FILE_PATH, block_sites
 
     if socket.gethostname() in WSL_HOSTS:
         linux=False
@@ -48,23 +57,30 @@ def set_globals(linux=True):
     if linux:
         LINUX=True
         HOSTS_FILE_PATH="/etc/hosts"
-        FLUSH=linux_flush
+        block_sites=block_sites_linux
     else:
         LINUX=False
-        HOSTS_FILE_PATH=r"C:\Windows\System32\drivers\etc\hosts"
-        FLUSH=windows_flush
-
-def linux_flush():
-    pass
+        WSL=True
+        if WSL:
+            HOSTS_FILE_PATH=r"/mnt/c/Windows/System32/drivers/etc/hosts"
+        else:
+            HOSTS_FILE_PATH=r"C:\Windows\System32\drivers\etc\hosts"
+        block_sites=block_sites_windows
+        print(HOSTS_FILE_PATH)
 
 def windows_flush():
     #type blocked_hosts > hosts
-    subprocess.Popen(f"ipconfig /flushdns", stdout=subprocess.PIPE, shell=True)
+    # NOT WORKING
+    # need this to work:  C:\Windows\System32\cmd.exe \c "cd C:\Users\tarchibald && ipconfig /flushdns > FLUSH_RESULT"
 
-def block_sites():
+    command=r"""/mnt/c/Windows/System32/cmd.exe \c "cd C:\Users\tarchibald && ipconfig /flushdns > FLUSH_RESULT" """
+    subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
+
+def block_sites_linux():
     print("blocking sites...")
     websites = get_sites().split()
     #print(websites)
+    print(f"blocking {HOSTS_FILE_PATH}")
     with Path(HOSTS_FILE_PATH).open("w") as f:
         f.write("\n" + prefix)
 
@@ -72,7 +88,28 @@ def block_sites():
             if w[0] != "#":
                 f.write("127.0.0.1 {} \n".format(w))
                 f.write("127.0.0.1 www.{} \n".format(w))
-    FLUSH()
+
+def block_sites_windows(): 
+    print("blocking sites...")
+    websites = get_sites().split()
+    print(f"blocking {HOSTS_FILE_PATH}")
+    # temp_path="./hosts.tmp"
+    
+    temp_path = HOSTS_FILE_PATH
+    with Path(temp_path).open("w") as f:
+        f.write("\n" + prefix)
+        for w in websites:
+            if w[0] != "#":
+                f.write("127.0.0.1 {} \n".format(w))
+                f.write("127.0.0.1 www.{} \n".format(w))
+
+    # NOT NEEDED or WORKING
+    if temp_path != HOSTS_FILE_PATH:
+        command=rf"""/mnt/c/Windows/System32/cmd.exe \c type {temp_path} > "{HOSTS_FILE_PATH}" """
+        subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
+
+
+    windows_flush()
 
 
 def unblock_sites():
