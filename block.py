@@ -29,16 +29,13 @@ root = Path(os.path.dirname(os.path.realpath(__file__)))
 _root = root.as_posix()
 os.chdir(_root)
 
-prefix = """127.0.0.1    localhost
-127.0.1.1    {}
+def read(path):
+    with Path(path).open() as f:
+        content = f.read()
+    return content
 
-::1     ip6-localhost ip6-loopback
-fe00::0 ip6-localnet
-ff00::0 ip6-mcastprefix
-ff02::1 ip6-allnodes
-ff02::2 ip6-allrouters
-
-""".format(socket.gethostname())
+linux_prefix = read("./linux_default").format(socket.gethostname())
+windows_prefix = read("./windows_default").format(socket.gethostname())
 
 
 def get_sites(website_file="websites.txt"):
@@ -49,15 +46,16 @@ WSL_HOSTS=["G1G2Q13"]
 
 def set_globals(linux=True):
     """ Run from Windows Python not supported/tested """
-    global LINUX, HOSTS_FILE_PATH, block_sites
+    global LINUX, HOSTS_FILE_PATH, block_sites, prefix
 
     if socket.gethostname() in WSL_HOSTS:
         linux=False
-
     if linux:
         LINUX=True
         HOSTS_FILE_PATH="/etc/hosts"
         block_sites=block_sites_linux
+        prefix=read("./linux_default").format(socket.gethostname())
+
     else:
         LINUX=False
         WSL=True
@@ -66,6 +64,7 @@ def set_globals(linux=True):
         else:
             HOSTS_FILE_PATH=r"C:\Windows\System32\drivers\etc\hosts"
         block_sites=block_sites_windows
+        prefix=read("./windows_default").format(socket.gethostname())
         print(HOSTS_FILE_PATH)
 
 def windows_flush():
@@ -118,8 +117,9 @@ def unblock_sites():
     with Path( HOSTS_FILE_PATH).open("w") as f:
         f.write(prefix)
         for w in websites:
-            f.write("127.0.0.1 {} \n".format(w))
-            f.write("127.0.0.1 www.{} \n".format(w))
+            if w[0].strip() != "#":
+                f.write("127.0.0.1 {} \n".format(w))
+                f.write("127.0.0.1 www.{} \n".format(w))
 
 def install_block_to_cron(user=""):
     process = subprocess.Popen(f"sudo -s bash {_root}/INSTALL.sh {user}", stdout=subprocess.PIPE, shell=True)

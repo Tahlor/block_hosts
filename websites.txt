@@ -39,6 +39,7 @@ universe.byu.edu
 homedepot.com
 lowes.com
 amazon.com
+smile.amazon.com
 walmart.com
 groupon.com
 aliexpress.com
