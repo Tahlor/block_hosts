@@ -121,6 +121,11 @@ def unblock_sites():
                 f.write("127.0.0.1 {} \n".format(w))
                 f.write("127.0.0.1 www.{} \n".format(w))
 
+def unblock_all():
+    print("unblocking ALL sites...")
+    with Path( HOSTS_FILE_PATH).open("w") as f:
+        f.write(prefix)
+
 def install_block_to_cron(user=""):
     process = subprocess.Popen(f"sudo -s bash {_root}/INSTALL.sh {user}", stdout=subprocess.PIPE, shell=True)
     output, error = process.communicate()
@@ -196,6 +201,7 @@ def n2w(n):
 def parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--unblock', action="store_true")
+    parser.add_argument('--unblock_all', action="store_true")
     parser.add_argument('--block', action="store_true")
     parser.add_argument('--off', action="store_true")
     parser.add_argument('--on', action="store_true")
@@ -211,6 +217,8 @@ def parser():
     break_message = "You got a {} minute break!"
     if opts.unblock:
         unblock_sites()
+    elif opts.unblock_all:
+        unblock_all()
     elif opts.break_mode is not None:
         unblock_timer()
         while True:
