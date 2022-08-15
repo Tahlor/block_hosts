@@ -125,6 +125,7 @@ def unblock_all():
     print("unblocking ALL sites...")
     with Path( HOSTS_FILE_PATH).open("w") as f:
         f.write(prefix)
+    print(prefix)
 
 def install_block_to_cron(user=""):
     process = subprocess.Popen(f"sudo -s bash {_root}/INSTALL.sh {user}", stdout=subprocess.PIPE, shell=True)
@@ -215,10 +216,10 @@ def parser():
     set_globals()
     
     break_message = "You got a {} minute break!"
-    if opts.unblock:
-        unblock_sites()
-    elif opts.unblock_all:
+    if opts.unblock_all:
         unblock_all()
+    elif opts.unblock:
+        unblock_sites()
     elif opts.break_mode is not None:
         unblock_timer()
         while True:
