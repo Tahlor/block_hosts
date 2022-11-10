@@ -60,7 +60,7 @@ def set_globals(linux=True):
         LINUX=True
         HOSTS_FILE_PATH="/etc/hosts"
         block_sites=block_sites_linux
-        prefix=read("./linux_default").format(socket.gethostname())
+        prefix=read("./websites/linux_default").format(socket.gethostname())
 
     else:
         LINUX=False
