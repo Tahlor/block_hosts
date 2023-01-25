@@ -48,7 +48,7 @@ def get_sites(website_file):
     with (root / website_file).open("r") as f:
         return f.read()
 
-WSL_HOSTS=["G1G2Q13"]
+WSL_HOSTS=["G1G2Q13", "PW01AYJG"]
 
 def set_globals(linux=True):
     """ Run from Windows Python not supported/tested """
