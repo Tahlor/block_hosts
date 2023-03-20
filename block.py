@@ -1,4 +1,3 @@
-
 from pathlib import Path
 import argparse
 import sys
@@ -6,6 +5,7 @@ import os
 import socket
 import subprocess
 from time import sleep
+import logging
 
 """
 * Run from Windows Python not supported/tested
@@ -20,6 +20,11 @@ Block Level:
 
 """
 powershell="/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
+
+logger = logging.getLogger(__name__)
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+logger.addHandler(console_handler)
 
 
 try:
@@ -63,32 +68,31 @@ def set_globals(linux=True):
         HOSTS_FILE_PATH="/etc/hosts"
         block_sites=block_sites_linux
         prefix=read("./websites/linux_default").format(socket.gethostname())
-        print("ON LINUX")
+        logger.info("ON LINUX")
 
     else:
         WSL=True
         if WSL:
             HOSTS_FILE_PATH=r"/mnt/c/Windows/System32/drivers/etc/hosts"
-            print("ON WSL")
+            logger.info("ON WSL")
         else:
             HOSTS_FILE_PATH=r"C:\Windows\System32\drivers\etc\hosts"
         block_sites=block_sites_windows
         prefix=read("./websites/windows_default").format(socket.gethostname())
-        print(HOSTS_FILE_PATH)
+        logger.info(HOSTS_FILE_PATH)
 
 
 def speak(phrase):
-    print(phrase)
+    logger.info(phrase)
     if LINUX:
         os.system('spd-say "{}"'.format(phrase))
     else:
         speak_windows(phrase)
 
 def speak_windows(phrase):
-    command = f"""{powershell} -Command "Add-Type -AssemblyName System.Speech; (New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak('{phrase}')" """
     command = f"""{powershell} -Command "Add-Type -AssemblyName System.Speech; (New-Object -TypeName System.Speech.Synthesis.SpeechSynthesizer).Speak('{phrase}')" """
 
-    print(command)
+    logger.debug(command)
     os.system(command)
 
 
@@ -101,10 +105,10 @@ def windows_flush():
     subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
 
 def block_sites_linux(level=2):
-    print("blocking sites...")
+    logger.info("blocking sites...")
     websites = get_sites_by_level(level, block=True)
-    #print(websites)
-    print(f"blocking {HOSTS_FILE_PATH}")
+    #logger.info(websites)
+    logger.info(f"blocking {HOSTS_FILE_PATH}")
     with Path(HOSTS_FILE_PATH).open("w") as f:
         f.write("\n" + prefix)
 
@@ -114,10 +118,10 @@ def block_sites_linux(level=2):
                 f.write("127.0.0.1 www.{} \n".format(w))
 
 def block_sites_windows(level=2):
-    print("blocking sites...")
+    logger.info("blocking sites...")
     websites = get_sites_by_level(level, block=True)
 
-    print(f"blocking {HOSTS_FILE_PATH}")
+    logger.info(f"blocking {HOSTS_FILE_PATH}")
     # temp_path="./hosts.tmp"
 
     temp_path = HOSTS_FILE_PATH
@@ -139,12 +143,12 @@ def block_sites_windows(level=2):
 
 def whatamidoing(level, block):
     blocking = ["Nothing", "Twitter/LinkedIn", "News/Shopping", "Email"]
-    print(f"Target Level: {level}")
+    logger.info(f"Target Level: {level}")
 
     if block:
-        print(f"You are blocking {' + '.join(blocking[:level+1])}")
+        logger.info(f"You are blocking {' + '.join(blocking[:level+1])}")
     else:
-        print(f"You are UNblocking {' + '.join(blocking[level:])}")
+        logger.info(f"You are UNblocking {' + '.join(blocking[level:])}")
 
 
 def get_sites_by_level(level=2, block=True):
@@ -159,14 +163,14 @@ def get_sites_by_level(level=2, block=True):
             src_level = int(src_level)
             # Unblock: only return sites at a lower block level than the current one
             if (src_level < level and not block) or (src_level <= level and block):
-                print(f"Adding {source}")
+                logger.info(f"Adding {source}")
                 websites += get_sites(source).split()
     return websites
 
 def unblock_sites(level=2):
     """ Recreate hosts block file from scratch
     """
-    print("unblocking sites...")
+    logger.info("unblocking sites...")
     websites = get_sites_by_level(level, block=False)
 
     with Path( HOSTS_FILE_PATH).open("w") as f:
@@ -177,17 +181,17 @@ def unblock_sites(level=2):
                 f.write("127.0.0.1 www.{} \n".format(w))
 
 def unblock_all():
-    print("unblocking ALL sites...")
+    logger.info("unblocking ALL sites...")
     with Path( HOSTS_FILE_PATH).open("w") as f:
         f.write(prefix)
-    print(prefix)
+    logger.info(prefix)
 
 def install_block_to_cron(user=""):
     process = subprocess.Popen(f"sudo -s bash {_root}/INSTALL.sh {user}", stdout=subprocess.PIPE, shell=True)
     output, error = process.communicate()
-    print("block_hosts installed to crontab")
-    #print("RESULT OF INSTALL")
-    #print(output.decode())
+    logger.info("block_hosts installed to crontab")
+    #logger.info("RESULT OF INSTALL")
+    #logger.info(output.decode())
 
 def get_crontab_text():
     cron_text = "sudo crontab -l"
@@ -208,7 +212,7 @@ def remove_from_cron():
     output, error = process.communicate()
     new_cron_text = output.decode()    
     install_new_crontab(new_cron_text)
-    print("block_hosts removed from crontab")
+    logger.info("block_hosts removed from crontab")
 
 # 59 23 * * * python3 /home/taylor/bashrc/ext/block_hosts/block.py --on > /home/taylor/bashrc/ext/block_hosts/BLOCK.log 2>&1 # PERSISTENT  
 
@@ -223,12 +227,15 @@ def unblock_one(item="youtube"):
     process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
     output, error = process.communicate()
 
-def unblock_timer(duration=5, level=2):
+def unblock_timer(duration=5, level=2, immediate=True):
     break_message = "You got a {} minute break!".format(duration)
-    try:
-    # Allow user to end break early
+    try: # Allow user to end break early
         speak(break_message)
-        input(break_message)
+        if immediate:
+            speak("Starting clock now")
+        else:
+            speak("Push any key to start")
+            input(break_message)
         unblock_sites(level)
 
         sleeper(duration)
