@@ -19,12 +19,25 @@ Block Level:
 3: Also Email
 
 """
-powershell="/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
 
-logger = logging.getLogger(__name__)
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.DEBUG)
-logger.addHandler(console_handler)
+powershell="/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
+cmd="/mnt/c/Windows/System32/cmd.exe"
+
+logger = logging.getLogger("root")
+logger.setLevel(logging.DEBUG)
+
+# create console handler and set level to debug
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+
+# create formatter
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
+# add formatter to ch
+ch.setFormatter(formatter)
+
+# add ch to logger
+logger.addHandler(ch)
 
 
 try:
@@ -48,7 +61,6 @@ def read(path):
 
 linux_prefix = read("./websites/linux_default").format(socket.gethostname())
 windows_prefix = read("./websites/windows_default").format(socket.gethostname())
-
 
 def get_sites(website_file):
     with (root / website_file).open("r") as f:
@@ -89,12 +101,24 @@ def speak(phrase):
     else:
         speak_windows(phrase)
 
+def run(command, blocking=True):
+    """ Run a system command on Linux using subprocess.Popen
+        os.system randomly fails with the powershell tts commands and leaves program hanging
+    """
+    logger.debug(command)
+    if blocking:
+        subprocess.Popen(command, stdout=subprocess.PIPE, shell=True).wait()
+    else:
+        subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
+
+
 def speak_windows(phrase):
-    command = f"""{powershell} -Command "Add-Type -AssemblyName System.Speech; (New-Object -TypeName System.Speech.Synthesis.SpeechSynthesizer).Speak('{phrase}')" """
+    #command = f"""{powershell} -Command Add-Type -AssemblyName System.Speech; (New-Object -TypeName System.Speech.Synthesis.SpeechSynthesizer).Speak('{phrase}')" """
+    #command = f"""{cmd} /c "powershell.exe -Command Add-Type -AssemblyName System.Speech; (New-Object -TypeName System.Speech.Synthesis.SpeechSynthesizer).Speak('{phrase}')" """
+    command = f"""powershell.exe -Command "Add-Type –AssemblyName System.Speech; (New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak('{phrase}');" """
 
     logger.debug(command)
-    os.system(command)
-
+    run(command)
 
 def windows_flush():
     #type blocked_hosts > hosts
@@ -103,6 +127,12 @@ def windows_flush():
 
     command=r"""/mnt/c/Windows/System32/cmd.exe \c "cd C:\Users\tarchibald && ipconfig /flushdns > FLUSH_RESULT" """
     subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
+
+def minutes_fmt(time):
+    if time == 1:
+        return "minute"
+    else:
+        return "minutes"
 
 def block_sites_linux(level=2):
     logger.info("blocking sites...")
@@ -227,11 +257,11 @@ def unblock_one(item="youtube"):
     process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
     output, error = process.communicate()
 
-def unblock_timer(duration=5, level=2, immediate=True):
+def unblock_timer(duration=5, level=2, confirm_break=False):
     break_message = "You got a {} minute break!".format(duration)
     try: # Allow user to end break early
-        speak(break_message)
-        if immediate:
+        #speak(break_message)
+        if not confirm_break:
             speak("Starting clock now")
         else:
             speak("Push any key to start")
@@ -239,8 +269,8 @@ def unblock_timer(duration=5, level=2, immediate=True):
         unblock_sites(level)
 
         sleeper(duration)
-    except:
-        pass
+    except Exception as e:
+        logger.error(e)
 
 
 num2words = {1: 'One', 2: 'Two', 3: 'Three', 4: 'Four', 5: 'Five', \
@@ -291,8 +321,8 @@ def parser():
         #unblock_timer(level=opts.level)
         work_minutes=opts.break_mode[0] if opts.break_mode else 25
         break_minutes=opts.break_mode[1] if len(opts.break_mode)>1 else 5
-        work_message="Blocking sites for {} minutes".format(work_minutes)
-        break_message="Unblocking sites for {} minutes".format(break_minutes)
+        work_message="Blocking sites for {} {}".format(work_minutes, minutes_fmt(work_minutes))
+        break_message="Unblocking sites for {} {}".format(break_minutes, minutes_fmt(break_minutes))
 
         while True:
                 block_sites(opts.level)
