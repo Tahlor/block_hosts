@@ -19,6 +19,7 @@ Block Level:
 3: Also Email
 
 """
+powershell="/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
 
 
 try:
@@ -56,22 +57,40 @@ def set_globals(linux=True):
 
     if socket.gethostname() in WSL_HOSTS:
         linux=False
+    LINUX = True if linux else False
+
     if linux:
-        LINUX=True
         HOSTS_FILE_PATH="/etc/hosts"
         block_sites=block_sites_linux
         prefix=read("./websites/linux_default").format(socket.gethostname())
+        print("ON LINUX")
 
     else:
-        LINUX=False
         WSL=True
         if WSL:
             HOSTS_FILE_PATH=r"/mnt/c/Windows/System32/drivers/etc/hosts"
+            print("ON WSL")
         else:
             HOSTS_FILE_PATH=r"C:\Windows\System32\drivers\etc\hosts"
         block_sites=block_sites_windows
         prefix=read("./websites/windows_default").format(socket.gethostname())
         print(HOSTS_FILE_PATH)
+
+
+def speak(phrase):
+    print(phrase)
+    if LINUX:
+        os.system('spd-say "{}"'.format(phrase))
+    else:
+        speak_windows(phrase)
+
+def speak_windows(phrase):
+    command = f"""{powershell} -Command "Add-Type -AssemblyName System.Speech; (New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak('{phrase}')" """
+    command = f"""{powershell} -Command "Add-Type -AssemblyName System.Speech; (New-Object -TypeName System.Speech.Synthesis.SpeechSynthesizer).Speak('{phrase}')" """
+
+    print(command)
+    os.system(command)
+
 
 def windows_flush():
     #type blocked_hosts > hosts
@@ -94,13 +113,13 @@ def block_sites_linux(level=2):
                 f.write("127.0.0.1 {} \n".format(w))
                 f.write("127.0.0.1 www.{} \n".format(w))
 
-def block_sites_windows(level=2): 
+def block_sites_windows(level=2):
     print("blocking sites...")
     websites = get_sites_by_level(level, block=True)
 
     print(f"blocking {HOSTS_FILE_PATH}")
     # temp_path="./hosts.tmp"
-    
+
     temp_path = HOSTS_FILE_PATH
     with Path(temp_path).open("w") as f:
         f.write("\n" + prefix)
@@ -208,7 +227,7 @@ def unblock_timer(duration=5, level=2):
     break_message = "You got a {} minute break!".format(duration)
     try:
     # Allow user to end break early
-        os.system('spd-say "{}"'.format(break_message))
+        speak(break_message)
         input(break_message)
         unblock_sites(level)
 
@@ -236,6 +255,9 @@ def n2w(n):
 
 
 def parser():
+    def parse_int_list(s):
+        return [int(x.strip()) for x in s.split(',')]
+
     parser = argparse.ArgumentParser()
     parser.add_argument('level', nargs='?', default=2)
     parser.add_argument('--unblock', action="store_true")
@@ -243,33 +265,39 @@ def parser():
     parser.add_argument('--block', action="store_true")
     parser.add_argument('--off', action="store_true")
     parser.add_argument('--on', action="store_true")
-    parser.add_argument('--break_mode', nargs='?', const=60, type=int)
+    parser.add_argument('--break_mode', nargs='?', type=parse_int_list, const=[25,5], default=None)
     parser.add_argument('--lunch', nargs='?', const=30, type=int)
     parser.add_argument('--user', default="taylor")
     parser.add_argument('--youtube', nargs='?', const="youtube", type=str)
-    parser.add_argument('--site', default=None) 
+    parser.add_argument('--site', default=None)
 
     opts = parser.parse_args()
     set_globals()
     opts.level = int(opts.level)
+
     break_message = "You got a {} minute break!"
     if opts.unblock_all:
         unblock_all()
     elif opts.unblock:
         unblock_sites(opts.level)
     elif opts.break_mode is not None:
-        unblock_timer(level=opts.level)
+        #unblock_timer(level=opts.level)
+        work_minutes=opts.break_mode[0] if opts.break_mode else 25
+        break_minutes=opts.break_mode[1] if len(opts.break_mode)>1 else 5
+        work_message="Blocking sites for {} minutes".format(work_minutes)
+        break_message="Unblocking sites for {} minutes".format(break_minutes)
+
         while True:
                 block_sites(opts.level)
-                os.system('spd-say "Blocking websites"')
-                print("Blocking sites for {} minutes".format(opts.break_mode))
-                sleeper(opts.break_mode)
-                os.system('spd-say "{}"'.format(break_message))
-                unblock_timer(level=opts.level)
+                speak(work_message)
+                sleeper(work_minutes)
+                speak(break_message)
+                unblock_timer(break_minutes, level=opts.level)
+
     elif opts.lunch is not None:
         unblock_timer(30)
         block_sites(opts.level)
-        os.system('spd-say "Blocking websites"')
+        speak("Blocking websites")
 
     elif opts.off:
         unblock_sites(opts.level)
