@@ -6,7 +6,7 @@ import socket
 import subprocess
 from time import sleep
 import logging
-
+from datetime import datetime
 """
 * Run from Windows Python not supported/tested
 * WSL block/unblock working with WUDO
@@ -228,14 +228,14 @@ def get_crontab_text():
     process = subprocess.Popen(cron_text, stdout=subprocess.PIPE, shell=True)
     output, error = process.communicate()
     return output.decode()
-    
+
 def install_new_crontab(new_cron_text):
     with (root / "_my_cron").open("w") as f:
         f.write(new_cron_text)
     #process = subprocess.Popen(f"'{new_cron_text}' > {_root}/_my_cron", stdout=subprocess.PIPE, shell=True)
     process = subprocess.call(f"sudo crontab {_root}/_my_cron", stdout=subprocess.PIPE, shell=True)
     os.remove(f"{_root}/_my_cron")
-    
+
 def remove_from_cron():
     remove_from_cron = "sudo crontab -l | sed '/PERSISTENT/p;/block_hosts\/block\.py /d'"
     process = subprocess.Popen(remove_from_cron, stdout=subprocess.PIPE, shell=True)
@@ -244,12 +244,26 @@ def remove_from_cron():
     install_new_crontab(new_cron_text)
     logger.info("block_hosts removed from crontab")
 
-# 59 23 * * * python3 /home/taylor/bashrc/ext/block_hosts/block.py --on > /home/taylor/bashrc/ext/block_hosts/BLOCK.log 2>&1 # PERSISTENT  
+# 59 23 * * * python3 /home/taylor/bashrc/ext/block_hosts/block.py --on > /home/taylor/bashrc/ext/block_hosts/BLOCK.log 2>&1 # PERSISTENT
 
 def sleeper(minutes):
+    pause_time = time_debt = 0
     factor = 20
     for i in tqdm(range(minutes*factor)):
-        sleep(int(60/factor))
+        try:
+            sleep(int(60/factor))
+        except:
+            now = datetime.now()
+            input("TIMER IS PAUSED, push any key to continue")
+            resume = datetime.now()
+            diff = resume - now
+            pause_time += diff.seconds
+    if pause_time:
+        logger.info(f"Timer paused for {pause_time} seconds")
+        response = input(f"Should I deduct {pause_time} seconds from next cycle? (y/n) (default: yes) ")
+        if response.lower() != "n":
+            time_debt = int(pause_time/60)
+    return time_debt
 
 def unblock_one(item="youtube"):
     # FILTER/DELETE LINES WITH "ITEM" IN THEM
@@ -258,16 +272,16 @@ def unblock_one(item="youtube"):
     output, error = process.communicate()
 
 def unblock_timer(duration=5, level=2, confirm_break=False):
-    break_message = "You got a {} minute break!".format(duration)
+    break_message = f"Push any key to start {duration} {minutes_fmt(duration)} break"
     try: # Allow user to end break early
         #speak(break_message)
         if not confirm_break:
+            logger.info(f"Starting {duration} {minutes_fmt(duration)} break")
             speak("Starting clock now")
         else:
-            speak("Push any key to start")
+            speak(break_message)
             input(break_message)
         unblock_sites(level)
-
         sleeper(duration)
     except Exception as e:
         logger.error(e)
@@ -307,6 +321,7 @@ def parser():
     parser.add_argument('--user', default="taylor")
     parser.add_argument('--youtube', nargs='?', const="youtube", type=str)
     parser.add_argument('--site', default=None)
+    parser.add_argument('--confirm_break', action="store_true")
 
     opts = parser.parse_args()
     set_globals()
@@ -327,9 +342,9 @@ def parser():
         while True:
                 block_sites(opts.level)
                 speak(work_message)
-                sleeper(work_minutes)
+                time_debt = sleeper(work_minutes)
                 speak(break_message)
-                unblock_timer(break_minutes, level=opts.level)
+                unblock_timer(break_minutes-time_debt, level=opts.level, confirm_break=opts.confirm_break)
 
     elif opts.lunch is not None:
         unblock_timer(30)
