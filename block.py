@@ -99,7 +99,23 @@ def speak(phrase):
     if LINUX:
         os.system('spd-say "{}"'.format(phrase))
     else:
-        speak_windows(phrase)
+        if not on_zoom_call():
+            speak_windows(phrase)
+
+def on_zoom_call():
+    if LINUX:
+        if "zoom" in os.popen("ps -A").read():
+            logger.info("zoom call detected, not speaking")
+            return True
+    else:
+        # check cmd.exe
+        # "Zoom Meeting"
+        # check window titles
+        if "zoom meeting" in os.popen("""cmd.exe /c tasklist /v /fi "imagename eq zoom.exe" """).read().lower():
+            logger.info("zoom call detected, not speaking")
+            return True
+
+    return False
 
 def run(command, blocking=True):
     """ Run a system command on Linux using subprocess.Popen
