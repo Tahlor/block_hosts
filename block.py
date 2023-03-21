@@ -24,11 +24,11 @@ powershell="/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
 cmd="/mnt/c/Windows/System32/cmd.exe"
 
 logger = logging.getLogger("root")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 # create console handler and set level to debug
 ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
+ch.setLevel(logging.INFO)
 
 # create formatter
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
@@ -93,7 +93,6 @@ def set_globals(linux=True):
         prefix=read("./websites/windows_default").format(socket.gethostname())
         logger.info(HOSTS_FILE_PATH)
 
-
 def speak(phrase):
     logger.info(phrase)
     if LINUX:
@@ -108,24 +107,26 @@ def on_zoom_call():
             logger.info("zoom call detected, not speaking")
             return True
     else:
-        # check cmd.exe
-        # "Zoom Meeting"
-        # check window titles
-        if "zoom meeting" in os.popen("""cmd.exe /c tasklist /v /fi "imagename eq zoom.exe" """).read().lower():
+        task_list = run_windows("""cmd.exe /c tasklist /v /fi "imagename eq zoom.exe" """, blocking=True)
+        if "zoom meeting" in task_list.lower():
             logger.info("zoom call detected, not speaking")
             return True
-
     return False
 
-def run(command, blocking=True):
+def run_windows(command, blocking=True):
     """ Run a system command on Linux using subprocess.Popen
         os.system randomly fails with the powershell tts commands and leaves program hanging
     """
+    command += " 2> nul"
     logger.debug(command)
     if blocking:
-        subprocess.Popen(command, stdout=subprocess.PIPE, shell=True).wait()
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True) #.wait()
+        output, error = process.communicate()
+        return output.decode()
     else:
-        subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
+        return process
+
 
 
 def speak_windows(phrase):
@@ -134,15 +135,13 @@ def speak_windows(phrase):
     command = f"""powershell.exe -Command "Add-Type –AssemblyName System.Speech; (New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak('{phrase}');" """
 
     logger.debug(command)
-    run(command)
+    run_windows(command)
 
 def windows_flush():
     #type blocked_hosts > hosts
-    # NOT WORKING
-    # need this to work:  C:\Windows\System32\cmd.exe \c "cd C:\Users\tarchibald && ipconfig /flushdns > FLUSH_RESULT"
-
-    command=r"""/mnt/c/Windows/System32/cmd.exe \c "cd C:\Users\tarchibald && ipconfig /flushdns > FLUSH_RESULT" """
-    subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
+    command = 'cmd.exe /c "cd C:\\Users\\tarchibald && ipconfig /flushdns "'
+    #subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
+    run_windows(command, blocking=False)
 
 def minutes_fmt(time):
     if time == 1:
@@ -340,7 +339,6 @@ def parser():
     parser.add_argument('--confirm_break', action="store_true")
 
     opts = parser.parse_args()
-    set_globals()
     opts.level = int(opts.level)
 
     break_message = "You got a {} minute break!"
@@ -385,6 +383,7 @@ def parser():
     else:
         block_sites(opts.level)
 
+set_globals()
 
 if __name__ == '__main__':
     parser()
