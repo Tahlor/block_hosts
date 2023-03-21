@@ -344,7 +344,8 @@ def parser():
                 speak(work_message)
                 time_debt = sleeper(work_minutes)
                 speak(break_message)
-                unblock_timer(break_minutes-time_debt, level=opts.level, confirm_break=opts.confirm_break)
+                adj_break_minutes = max(break_minutes-time_debt, 0)
+                unblock_timer(adj_break_minutes, level=opts.level, confirm_break=opts.confirm_break)
 
     elif opts.lunch is not None:
         unblock_timer(30)
