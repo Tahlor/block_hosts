@@ -137,7 +137,16 @@ def speak_windows(phrase):
     logger.debug(command)
     run_windows(command)
 
-def windows_flush():
+def flush():
+    if LINUX:
+        flush_linux()
+    else:
+        flush_windows()
+def flush_linux():
+    logger.info("flushing dns...")
+    os.system("sudo service network-manager restart")
+
+def flush_windows():
     #type blocked_hosts > hosts
     command = 'cmd.exe /c "cd C:\\Users\\tarchibald && ipconfig /flushdns "'
     #subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
@@ -177,13 +186,13 @@ def block_sites_windows(level=2):
                 f.write("127.0.0.1 {} \n".format(w))
                 f.write("127.0.0.1 www.{} \n".format(w))
 
-    # NOT NEEDED or WORKING
+    # NOT NEEDED or NOT? WORKING
     if temp_path != HOSTS_FILE_PATH:
         command=rf"""/mnt/c/Windows/System32/cmd.exe \c type {temp_path} > "{HOSTS_FILE_PATH}" """
         subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
 
 
-    windows_flush()
+    flush_windows()
 
 
 def whatamidoing(level, block):
@@ -224,6 +233,8 @@ def unblock_sites(level=2):
             if w[0].strip() != "#":
                 f.write("127.0.0.1 {} \n".format(w))
                 f.write("127.0.0.1 www.{} \n".format(w))
+
+    flush()
 
 def unblock_all():
     logger.info("unblocking ALL sites...")
@@ -290,13 +301,13 @@ def unblock_timer(duration=5, level=2, confirm_break=False):
     break_message = f"Push any key to start {duration} {minutes_fmt(duration)} break"
     try: # Allow user to end break early
         #speak(break_message)
+        unblock_sites(level)
         if not confirm_break:
             logger.info(f"Starting {duration} {minutes_fmt(duration)} break")
             speak("Starting clock now")
         else:
             speak(break_message)
             input(break_message)
-        unblock_sites(level)
         sleeper(duration)
     except Exception as e:
         logger.error(e)
@@ -332,6 +343,7 @@ def parser():
     parser.add_argument('--off', action="store_true")
     parser.add_argument('--on', action="store_true")
     parser.add_argument('--break_mode', nargs='?', type=parse_int_list, const=[25,5], default=None)
+    parser.add_argument('--break_level', default=1, type=int, help="Blocking level during break")
     parser.add_argument('--lunch', nargs='?', const=30, type=int)
     parser.add_argument('--user', default="taylor")
     parser.add_argument('--youtube', nargs='?', const="youtube", type=str)
@@ -350,16 +362,16 @@ def parser():
         #unblock_timer(level=opts.level)
         work_minutes=opts.break_mode[0] if opts.break_mode else 25
         break_minutes=opts.break_mode[1] if len(opts.break_mode)>1 else 5
-        work_message="Blocking sites for {} {}".format(work_minutes, minutes_fmt(work_minutes))
-        break_message="Unblocking sites for {} {}".format(break_minutes, minutes_fmt(break_minutes))
+        work_message="Deep work for {} {}".format(work_minutes, minutes_fmt(work_minutes))
+        break_message="Break for {} {}".format(break_minutes, minutes_fmt(break_minutes))
 
         while True:
-                block_sites(opts.level)
                 speak(work_message)
+                block_sites(opts.level)
                 time_debt = sleeper(work_minutes)
                 speak(break_message)
                 adj_break_minutes = max(break_minutes-time_debt, 0)
-                unblock_timer(adj_break_minutes, level=opts.level, confirm_break=opts.confirm_break)
+                unblock_timer(adj_break_minutes, level=opts.break_level, confirm_break=opts.confirm_break)
 
     elif opts.lunch is not None:
         unblock_timer(30)
