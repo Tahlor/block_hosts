@@ -19,7 +19,7 @@ Block Level:
 3: Also Email
 
 """
-
+MUTE = False
 powershell="/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
 cmd="/mnt/c/Windows/System32/cmd.exe"
 
@@ -95,6 +95,10 @@ def set_globals(linux=True):
 
 def speak(phrase):
     logger.info(phrase)
+
+    if MUTE:
+        logger.info("MUTED, not speaking")
+        return
     if LINUX:
         os.system('spd-say "{}"'.format(phrase))
     else:
@@ -286,6 +290,7 @@ def sleeper(minutes):
             pause_time += diff.seconds
     if pause_time:
         logger.info(f"Timer paused for {pause_time} seconds")
+        speak("Timer was paused; should this be deducted from the next cycle?")
         response = input(f"Should I deduct {pause_time} seconds from next cycle? (y/n) (default: yes) ")
         if response.lower() != "n":
             time_debt = int(pause_time/60)
@@ -332,6 +337,7 @@ def n2w(n):
 
 
 def parser():
+    global MUTE
     def parse_int_list(s):
         return [int(x.strip()) for x in s.split(',')]
 
@@ -349,11 +355,13 @@ def parser():
     parser.add_argument('--youtube', nargs='?', const="youtube", type=str)
     parser.add_argument('--site', default=None)
     parser.add_argument('--confirm_break', action="store_true")
+    parser.add_argument('--mute', action="store_true")
 
     opts = parser.parse_args()
     opts.level = int(opts.level)
 
-    break_message = "You got a {} minute break!"
+    MUTE = opts.mute
+
     if opts.unblock_all:
         unblock_all()
     elif opts.unblock:
