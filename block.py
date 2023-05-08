@@ -7,6 +7,8 @@ import subprocess
 from time import sleep
 import logging
 from datetime import datetime
+from utils import *
+
 """
 * Run from Windows Python not supported/tested
 * WSL block/unblock working with WUDO
@@ -112,7 +114,8 @@ def on_zoom_call():
             return True
     else:
         task_list = run_windows("""cmd.exe /c tasklist /v /fi "imagename eq zoom.exe" """, blocking=True)
-        if "zoom meeting" in task_list.lower():
+        #if "zoom meeting" in task_list.lower():
+        if "zoom" in task_list.lower():
             logger.info("zoom call detected, not speaking")
             return True
     return False
@@ -284,10 +287,15 @@ def sleeper(minutes):
             sleep(int(60/factor))
         except:
             now = datetime.now()
-            input("TIMER IS PAUSED, push any key to continue")
-            resume = datetime.now()
-            diff = resume - now
-            pause_time += diff.seconds
+            try:
+                input("TIMER IS PAUSED, push any key to continue")
+                resume = datetime.now()
+                diff = resume - now
+                pause_time += diff.seconds
+            except:
+                response = input("Go back to work early? Y/n")
+                if response.lower() == "y":
+                    return 0
     if pause_time:
         logger.info(f"Timer paused for {pause_time} seconds")
         speak("Timer was paused; should this be deducted from the next cycle?")
@@ -362,6 +370,8 @@ def parser():
 
     MUTE = opts.mute
 
+    epoch = read_completed_cycles()
+
     if opts.unblock_all:
         unblock_all()
     elif opts.unblock:
@@ -372,14 +382,19 @@ def parser():
         break_minutes=opts.break_mode[1] if len(opts.break_mode)>1 else 5
         work_message="Deep work for {} {}".format(work_minutes, minutes_fmt(work_minutes))
         break_message="Break for {} {}".format(break_minutes, minutes_fmt(break_minutes))
-
         while True:
+                epoch += 1
+                print(f"Starting Epoch: {epoch}/15")
                 speak(work_message)
                 block_sites(opts.level)
+                if True:
+                    speak("Ready?")
+                    input("Ready to work?")
                 time_debt = sleeper(work_minutes)
                 speak(break_message)
                 adj_break_minutes = max(break_minutes-time_debt, 0)
                 unblock_timer(adj_break_minutes, level=opts.break_level, confirm_break=opts.confirm_break)
+                write_completed_cycles(epoch)
 
     elif opts.lunch is not None:
         unblock_timer(30)

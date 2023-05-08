@@ -16,6 +16,6 @@ def test_bell():
 
 
 if __name__ == "__main__":
-    #test_on_zoom_call()
+    test_on_zoom_call()
     #test_flush()
     test_bell()
