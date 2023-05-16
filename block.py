@@ -95,7 +95,7 @@ def set_globals(linux=True):
         prefix=read("./websites/windows_default").format(socket.gethostname())
         logger.info(HOSTS_FILE_PATH)
 
-def speak(phrase, delay=0):
+def speak(phrase, delay=0, blocking=False):
     logger.info(phrase)
 
     if MUTE:
@@ -105,7 +105,7 @@ def speak(phrase, delay=0):
         os.system('spd-say "{}"'.format(phrase))
     else:
         if not on_zoom_call():
-            speak_windows(phrase, delay=delay)
+            speak_windows(phrase, delay=delay, blocking=blocking)
 
 def on_zoom_call():
     if LINUX:
@@ -114,8 +114,8 @@ def on_zoom_call():
             return True
     else:
         task_list = run_windows("""cmd.exe /c tasklist /v /fi "imagename eq zoom.exe" """, blocking=True)
-        #if "zoom meeting" in task_list.lower():
-        if "zoom" in task_list.lower():
+        #         if "zoom" in task_list.lower():
+        if "zoom meeting" in task_list.lower():
             logger.info("zoom call detected, not speaking")
             return True
     return False
@@ -136,7 +136,7 @@ def run_windows(command, blocking=True):
 
 
 
-def speak_windows(phrase, delay=0):
+def speak_windows(phrase, delay=0, blocking=False):
     #command = f"""{powershell} -Command Add-Type -AssemblyName System.Speech; (New-Object -TypeName System.Speech.Synthesis.SpeechSynthesizer).Speak('{phrase}')" """
     #command = f"""{cmd} /c "powershell.exe -Command Add-Type -AssemblyName System.Speech; (New-Object -TypeName System.Speech.Synthesis.SpeechSynthesizer).Speak('{phrase}')" """
     if delay:
@@ -145,7 +145,7 @@ def speak_windows(phrase, delay=0):
         command = f"""powershell.exe -Command "Add-Type –AssemblyName System.Speech; (New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak('{phrase}');" """
 
     logger.debug(command)
-    run_windows(command, blocking=False)
+    run_windows(command, blocking=blocking)
 
 def flush():
     if LINUX:
@@ -276,11 +276,17 @@ def remove_from_cron():
     remove_from_cron = "sudo crontab -l | sed '/PERSISTENT/p;/block_hosts\/block\.py /d'"
     process = subprocess.Popen(remove_from_cron, stdout=subprocess.PIPE, shell=True)
     output, error = process.communicate()
-    new_cron_text = output.decode()    
+    new_cron_text = output.decode()
     install_new_crontab(new_cron_text)
     logger.info("block_hosts removed from crontab")
 
 # 59 23 * * * python3 /home/taylor/bashrc/ext/block_hosts/block.py --on > /home/taylor/bashrc/ext/block_hosts/BLOCK.log 2>&1 # PERSISTENT
+
+def input2(text):
+    try:
+        return input(text) # or raw_input() for Python 2
+    except:
+        raise KeyboardInterrupt
 
 def sleeper(minutes):
     pause_time = time_debt = 0
@@ -291,17 +297,20 @@ def sleeper(minutes):
         except:
             now = datetime.now()
             try:
-                input("TIMER IS PAUSED, push any key to continue")
+                input2("TIMER IS PAUSED, push any key to continue")
                 resume = datetime.now()
                 diff = resume - now
                 pause_time += diff.seconds
-            except:
-                response = input("Skip to next? Y/n")
-                if response.lower() == "y":
+            except KeyboardInterrupt:
+                response = input("Skip to next? Y/n ")
+                print("RESPONSE")
+                print(response)
+                print("END")
+                if response.lower().strip()[-1] == "y":
                     return 0
     if pause_time:
         logger.info(f"Timer paused for {pause_time} seconds")
-        speak("Timer was paused; should this be deducted from the next cycle?")
+        speak("Timer was paused; should this be deducted from the next cycle?", blocking=False)
         response = input(f"Should I deduct {pause_time} seconds from next cycle? (y/n) (default: yes) ")
         if response.lower() != "n":
             time_debt = int(pause_time/60)
@@ -314,15 +323,16 @@ def unblock_one(item="youtube"):
     output, error = process.communicate()
 
 def unblock_timer(duration=5, level=2, confirm_break=False):
-    break_message = f"Push any key to start {duration} {minutes_fmt(duration)} break"
+    break_message = f"Time for a {duration} minute break."
+    unblock_sites(level)
+
     try: # Allow user to end break early
-        #speak(break_message)
-        unblock_sites(level)
+        speak(break_message)
         if not confirm_break:
-            logger.info(f"Starting {duration} {minutes_fmt(duration)} break")
-            speak("Starting clock now")
+            logger.info(break_message)
+            speak(break_message + " Starting now!", blocking=True)
         else:
-            speak(break_message)
+            speak(break_message + " Push any key to start.", blocking=False)
             input(break_message)
         sleeper(duration)
     except Exception as e:
@@ -367,6 +377,7 @@ def parser():
     parser.add_argument('--site', default=None)
     parser.add_argument('--confirm_break', action="store_true")
     parser.add_argument('--mute', action="store_true")
+    parser.add_argument('--confirm_work', action="store_true")
 
     opts = parser.parse_args()
     opts.level = int(opts.level)
@@ -375,27 +386,36 @@ def parser():
 
     epoch = read_completed_cycles()
 
+    opts.confirm_work = True
+    opts.confirm_break = True
+
     if opts.unblock_all:
         unblock_all()
     elif opts.unblock:
         unblock_sites(opts.level)
+
     elif opts.break_mode is not None:
         #unblock_timer(level=opts.level)
         work_minutes=opts.break_mode[0] if opts.break_mode else 25
         break_minutes=opts.break_mode[1] if len(opts.break_mode)>1 else 5
-        work_message="Deep work for {} {}. Ready?".format(work_minutes, minutes_fmt(work_minutes))
-        break_message="Break for {} {}. Ready?".format(break_minutes, minutes_fmt(break_minutes))
+        work_message="Deep work for {} {}.".format(work_minutes, minutes_fmt(work_minutes))
+        break_message="Break for {} {}."
+        
+        work_message += " Ready?" if opts.confirm_work else " GO! "
+        #break_message += " Ready?" if opts.confirm_break else " GO! "
+        
         while True:
                 epoch += 1
                 print(f"Starting Epoch: {epoch}/15")
-                speak(work_message)
+                speak(work_message, blocking=False)
                 block_sites(opts.level)
-                if True:
-                    #speak("Ready?", delay=1.5)
+
+                if opts.confirm_work:
                     input("Ready?")
-                speak("GO!!")
+                    speak("GO!!")
+
                 time_debt = sleeper(work_minutes)
-                speak(break_message)
+
                 adj_break_minutes = max(break_minutes-time_debt, 0)
                 unblock_timer(adj_break_minutes, level=opts.break_level, confirm_break=opts.confirm_break)
                 write_completed_cycles(epoch)
