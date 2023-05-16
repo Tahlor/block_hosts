@@ -95,7 +95,7 @@ def set_globals(linux=True):
         prefix=read("./websites/windows_default").format(socket.gethostname())
         logger.info(HOSTS_FILE_PATH)
 
-def speak(phrase):
+def speak(phrase, delay=0):
     logger.info(phrase)
 
     if MUTE:
@@ -105,7 +105,7 @@ def speak(phrase):
         os.system('spd-say "{}"'.format(phrase))
     else:
         if not on_zoom_call():
-            speak_windows(phrase)
+            speak_windows(phrase, delay=delay)
 
 def on_zoom_call():
     if LINUX:
@@ -136,13 +136,16 @@ def run_windows(command, blocking=True):
 
 
 
-def speak_windows(phrase):
+def speak_windows(phrase, delay=0):
     #command = f"""{powershell} -Command Add-Type -AssemblyName System.Speech; (New-Object -TypeName System.Speech.Synthesis.SpeechSynthesizer).Speak('{phrase}')" """
     #command = f"""{cmd} /c "powershell.exe -Command Add-Type -AssemblyName System.Speech; (New-Object -TypeName System.Speech.Synthesis.SpeechSynthesizer).Speak('{phrase}')" """
-    command = f"""powershell.exe -Command "Add-Type –AssemblyName System.Speech; (New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak('{phrase}');" """
+    if delay:
+        command = f"""powershell.exe -Command "Start-Sleep -Milliseconds {delay*1000}; Add-Type –AssemblyName System.Speech; (New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak('{phrase}');" """
+    else:
+        command = f"""powershell.exe -Command "Add-Type –AssemblyName System.Speech; (New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak('{phrase}');" """
 
     logger.debug(command)
-    run_windows(command)
+    run_windows(command, blocking=False)
 
 def flush():
     if LINUX:
@@ -293,7 +296,7 @@ def sleeper(minutes):
                 diff = resume - now
                 pause_time += diff.seconds
             except:
-                response = input("Go back to work early? Y/n")
+                response = input("Skip to next? Y/n")
                 if response.lower() == "y":
                     return 0
     if pause_time:
@@ -380,16 +383,17 @@ def parser():
         #unblock_timer(level=opts.level)
         work_minutes=opts.break_mode[0] if opts.break_mode else 25
         break_minutes=opts.break_mode[1] if len(opts.break_mode)>1 else 5
-        work_message="Deep work for {} {}".format(work_minutes, minutes_fmt(work_minutes))
-        break_message="Break for {} {}".format(break_minutes, minutes_fmt(break_minutes))
+        work_message="Deep work for {} {}. Ready?".format(work_minutes, minutes_fmt(work_minutes))
+        break_message="Break for {} {}. Ready?".format(break_minutes, minutes_fmt(break_minutes))
         while True:
                 epoch += 1
                 print(f"Starting Epoch: {epoch}/15")
                 speak(work_message)
                 block_sites(opts.level)
                 if True:
-                    speak("Ready?")
-                    input("Ready to work?")
+                    #speak("Ready?", delay=1.5)
+                    input("Ready?")
+                speak("GO!!")
                 time_debt = sleeper(work_minutes)
                 speak(break_message)
                 adj_break_minutes = max(break_minutes-time_debt, 0)
