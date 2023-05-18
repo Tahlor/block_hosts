@@ -24,7 +24,7 @@ Block Level:
 MUTE = False
 powershell="/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
 cmd="/mnt/c/Windows/System32/cmd.exe"
-
+TIMEOUT = 120
 logger = logging.getLogger("root")
 logger.setLevel(logging.INFO)
 
@@ -41,6 +41,8 @@ ch.setFormatter(formatter)
 # add ch to logger
 logger.addHandler(ch)
 
+
+I = IdleTimeoutHandler(timeout = TIMEOUT, commands=None, run_once=False)
 
 try:
     from tqdm import tqdm
@@ -302,7 +304,7 @@ def sleeper(minutes):
                 diff = resume - now
                 pause_time += diff.seconds
             except KeyboardInterrupt:
-                response = input("Skip to next? Y/n ")
+                response = I.prompt("Skip to next? Y/n ", commands=None)
                 print("RESPONSE")
                 print(response)
                 print("END")
@@ -311,7 +313,7 @@ def sleeper(minutes):
     if pause_time:
         logger.info(f"Timer paused for {pause_time} seconds")
         speak("Timer was paused; should this be deducted from the next cycle?", blocking=False)
-        response = input(f"Should I deduct {pause_time} seconds from next cycle? (y/n) (default: yes) ")
+        response = I.prompt(f"Should I deduct {pause_time} seconds from next cycle? (y/n) (default: yes) ", commands=None)
         if response.lower() != "n":
             time_debt = int(pause_time/60)
     return time_debt
@@ -332,8 +334,9 @@ def unblock_timer(duration=5, level=2, confirm_break=False):
             logger.info(break_message)
             speak(break_message + " Starting now!", blocking=True)
         else:
-            speak(break_message + " Push any key to start.", blocking=False)
-            input(break_message)
+            speak_break = lambda :speak(break_message + " Push any key to start.", blocking=False)
+            speak_break()
+            I.prompt(break_message, commands=[speak_break])
         sleeper(duration)
     except Exception as e:
         logger.error(e)
@@ -407,12 +410,12 @@ def parser():
         while True:
                 epoch += 1
                 print(f"Starting Epoch: {epoch}/15")
-                speak(work_message, blocking=False)
-                block_sites(opts.level)
-
+                speak_work = lambda: speak(work_message, blocking=False)
+                speak_work()
                 if opts.confirm_work:
-                    input("Ready?")
+                    I.prompt("Ready?", commands=[speak_work])
                     speak("GO!!")
+                block_sites(opts.level)
 
                 time_debt = sleeper(work_minutes)
 
