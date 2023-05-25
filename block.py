@@ -8,6 +8,7 @@ from time import sleep
 import logging
 from datetime import datetime
 from utils import *
+from powershell import volume_commands
 
 """
 * Run from Windows Python not supported/tested
@@ -141,10 +142,22 @@ def run_windows(command, blocking=True):
 def speak_windows(phrase, delay=0, blocking=False):
     #command = f"""{powershell} -Command Add-Type -AssemblyName System.Speech; (New-Object -TypeName System.Speech.Synthesis.SpeechSynthesizer).Speak('{phrase}')" """
     #command = f"""{cmd} /c "powershell.exe -Command Add-Type -AssemblyName System.Speech; (New-Object -TypeName System.Speech.Synthesis.SpeechSynthesizer).Speak('{phrase}')" """
-    if delay:
-        command = f"""powershell.exe -Command "Start-Sleep -Milliseconds {delay*1000}; Add-Type –AssemblyName System.Speech; (New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak('{phrase}');" """
-    else:
-        command = f"""powershell.exe -Command "Add-Type –AssemblyName System.Speech; (New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak('{phrase}');" """
+    # {volume_commands};
+    get_volume = """$CurrentVolume = [Audio]::Volume;"""
+    set_volume = """[Audio]::Volume = 0.5;"""
+    reset_volume = """[Audio]::Volume = $CurrentVolume;"""
+    delay_command = f"Start-Sleep -Milliseconds {delay*1000};" if delay else ""
+    command = (
+        f'powershell.exe -Command "'
+        f'$CurrentVolume = [Audio]::Volume; '
+        f'[Audio]::Volume = 0.5; '
+        f'{delay_command}'
+        f'Add-Type –AssemblyName System.Speech; '
+        f'(New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak(\'{phrase}\'); '
+        #f'[Audio]::Volume = $CurrentVolume;'
+        #f'echo $CurrentVolume;'
+        f'"'
+    )
 
     logger.debug(command)
     run_windows(command, blocking=blocking)
@@ -329,9 +342,7 @@ def unblock_timer(duration=5, level=2, confirm_break=False):
     unblock_sites(level)
 
     try: # Allow user to end break early
-        speak(break_message)
         if not confirm_break:
-            logger.info(break_message)
             speak(break_message + " Starting now!", blocking=True)
         else:
             speak_break = lambda :speak(break_message + " Push any key to start.", blocking=False)
