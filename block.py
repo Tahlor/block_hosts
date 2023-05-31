@@ -124,18 +124,18 @@ def on_zoom_call():
             return True
     return False
 
-def run_windows(command, blocking=True):
+def run_windows(command, blocking=True, executable=None):
     """ Run a system command on Linux using subprocess.Popen
         os.system randomly fails with the powershell tts commands and leaves program hanging
     """
     command += " 2> nul"
     logger.debug(command)
     if blocking:
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True) #.wait()
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True, executable=executable) #.wait()
         output, error = process.communicate()
         return output.decode()
     else:
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True, executable=executable)
         return process
 
 
@@ -144,26 +144,28 @@ def speak_windows(phrase, delay=0, blocking=False, message_volume=.5):
     #command = f"""{powershell} -Command Add-Type -AssemblyName System.Speech; (New-Object -TypeName System.Speech.Synthesis.SpeechSynthesizer).Speak('{phrase}')" """
     #command = f"""{cmd} /c "powershell.exe -Command Add-Type -AssemblyName System.Speech; (New-Object -TypeName System.Speech.Synthesis.SpeechSynthesizer).Speak('{phrase}')" """
     # {volume_commands};
-    current_volume=get_volume_windows()
+    #current_volume=get_volume_windows()
+    
     get_volume = """$CurrentVolume = [Audio]::Volume;"""
     set_volume = """[Audio]::Volume = {};"""
     reset_volume = """[Audio]::Volume = $CurrentVolume;"""
     delay_command = f"Start-Sleep -Milliseconds {delay*1000};" if delay else ""
-    command = (
-        f'powershell.exe -Command "'
-        #f'$CurrentVolume = [Audio]::Volume; '
-        f'{set_volume.format(message_volume)} '
-        f'{delay_command} '
-        f'Add-Type –AssemblyName System.Speech; '
-        f'(New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak(\'{phrase}\'); '
-        f'[Audio]::Volume = {current_volume};'
-        #f'[Audio]::Volume = $CurrentVolume;'
-        #f'echo $CurrentVolume;'
-        f'"'
-    )
+
+    command = f'''
+    {get_volume} ;
+    {set_volume.format(message_volume)} ;
+    {delay_command} ;
+    Add-Type –AssemblyName System.Speech;
+    (New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak(\'{phrase}\');
+    [Audio]::Volume = $CurrentVolume;
+    '''
+    #f'{set_volume.format(current_volume)} '
+
+    #Start-Sleep -Seconds 5;
 
     logger.debug(command)
-    run_windows(command, blocking=blocking)
+    output = run_windows(command, blocking=blocking, executable='powershell.exe')
+    logger.debug(output)
 
 def flush():
     if LINUX:

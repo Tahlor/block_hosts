@@ -20,6 +20,24 @@ def get_volume_windows():
 
     return volume
 
+def test():
+    get_volume_windows()
+    message_volume = .5
+    set_volume = """[Audio]::Volume = {};"""
+    get_volume = """$CurrentVolume = [Audio]::Volume;"""
+    powershell_command = f'''
+        {get_volume}
+        {set_volume.format(message_volume)};
+        (Set-DefaultAudioDevice -Volume $CurrentVolume);
+        '''
+    powershell_command = f'''
+        $CurrentVolume = (Get-DefaultAudioDevice).Volume;
+        {set_volume.format(message_volume)};
+        '''
+    subprocess.run(['powershell.exe', '-Command', powershell_command], shell=True)
+    get_volume_windows()
+
 
 if __name__=='__main__':
-    print(get_volume_windows())
+    #print(get_volume_windows())
+    test()
