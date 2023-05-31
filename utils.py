@@ -101,7 +101,7 @@ if __name__=="__main__":
     test_func2 = lambda : print("Timeout2 func FTW")
     test_func3 = lambda : print("Timeout3 func FTW")
 
-    I = IdleTimeoutHandler(timeout = 1, commands=[test_func], run_once=False)
+    I = IdleTimeoutHandler(timeout = 15, commands=[test_func], run_once=False)
     I.prompt("1. This is a test prompt? ")
     I.prompt("2. This is a test prompt? ", commands=test_func2)
     I.prompt("3. This is a test prompt? ")

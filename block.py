@@ -9,6 +9,7 @@ import logging
 from datetime import datetime
 from utils import *
 from powershell import volume_commands
+from volume import get_volume_windows
 
 """
 * Run from Windows Python not supported/tested
@@ -139,21 +140,23 @@ def run_windows(command, blocking=True):
 
 
 
-def speak_windows(phrase, delay=0, blocking=False):
+def speak_windows(phrase, delay=0, blocking=False, message_volume=.5):
     #command = f"""{powershell} -Command Add-Type -AssemblyName System.Speech; (New-Object -TypeName System.Speech.Synthesis.SpeechSynthesizer).Speak('{phrase}')" """
     #command = f"""{cmd} /c "powershell.exe -Command Add-Type -AssemblyName System.Speech; (New-Object -TypeName System.Speech.Synthesis.SpeechSynthesizer).Speak('{phrase}')" """
     # {volume_commands};
+    current_volume=get_volume_windows()
     get_volume = """$CurrentVolume = [Audio]::Volume;"""
-    set_volume = """[Audio]::Volume = 0.5;"""
+    set_volume = """[Audio]::Volume = {};"""
     reset_volume = """[Audio]::Volume = $CurrentVolume;"""
     delay_command = f"Start-Sleep -Milliseconds {delay*1000};" if delay else ""
     command = (
         f'powershell.exe -Command "'
-        f'$CurrentVolume = [Audio]::Volume; '
-        f'[Audio]::Volume = 0.5; '
-        f'{delay_command}'
+        #f'$CurrentVolume = [Audio]::Volume; '
+        f'{set_volume.format(message_volume)} '
+        f'{delay_command} '
         f'Add-Type –AssemblyName System.Speech; '
         f'(New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak(\'{phrase}\'); '
+        f'[Audio]::Volume = {current_volume};'
         #f'[Audio]::Volume = $CurrentVolume;'
         #f'echo $CurrentVolume;'
         f'"'

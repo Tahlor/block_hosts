@@ -25,3 +25,15 @@ Block websites using the hosts file on Linux
     
 
     
+## VOLUME
+You can either send that HUGE powershell command, or set it up in your "powershell" bashrc.
+
+    @echo off
+    # Create profile
+    set "ps1_path=%USERPROFILE%\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1"
+    if not exist "%USERPROFILE%\Documents\WindowsPowerShell" mkdir "%USERPROFILE%\Documents\WindowsPowerShell"
+    (echo # $PROFILE script) > "%ps1_path%"
+
+    # Add Volume Script to profile
+    (echo . `"%USERPROFILE%\bashrc\windows\alias_scripts\profile.ps1`" ) >> "%ps1_path%"
+
