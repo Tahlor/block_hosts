@@ -26,7 +26,7 @@ Block Level:
 MUTE = False
 powershell="/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
 cmd="/mnt/c/Windows/System32/cmd.exe"
-TIMEOUT = 120
+IDLE_TIMEOUT = 300
 logger = logging.getLogger("root")
 logger.setLevel(logging.INFO)
 
@@ -44,7 +44,7 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 
-I = IdleTimeoutHandler(timeout = TIMEOUT, commands=None, run_once=False)
+I = IdleTimeoutHandler(timeout = IDLE_TIMEOUT, commands=None, run_once=False)
 
 try:
     from tqdm import tqdm
@@ -108,8 +108,36 @@ def speak(phrase, delay=0, blocking=False):
     if LINUX:
         os.system('spd-say "{}"'.format(phrase))
     else:
-        if not on_zoom_call():
+        if on_zoom_call():
+            pass
+        elif on_work_network():
+            if "go" not in phrase.lower():
+                system_beep(blocking=blocking)
+        else:
             speak_windows(phrase, delay=delay, blocking=blocking)
+
+def system_beep(blocking=False):
+    try:
+        logger.debug("BEEP!!")
+        run_windows("[System.Media.SystemSounds]::Question.Play()", blocking=blocking, executable='powershell.exe')
+    except Exception as e:
+        print(f"An error occurred while beeping: {e}")
+
+
+def mute_speaker():
+    return on_zoom_call() or (not LINUX and on_work_network() and not bluetooth_sound())
+
+def on_work_network():
+    # Right now, this just tests if I'm at work OR on the VPN, actually might just be for the VPN
+    # maybe try using the work gateway (wifi and hardline)
+    try:
+        response = requests.get("10.74.9.18", timeout=1)
+        return response.status_code == 200
+    except requests.exceptions.RequestException:
+        return False
+
+def bluetooth_sound():
+    return False
 
 def on_zoom_call():
     if LINUX:

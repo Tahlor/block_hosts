@@ -37,3 +37,8 @@ You can either send that HUGE powershell command, or set it up in your "powershe
     # Add Volume Script to profile
     (echo . `"%USERPROFILE%\bashrc\windows\alias_scripts\profile.ps1`" ) >> "%ps1_path%"
 
+## WINDOWS - choose a different sound when at the office
+    Set your network name (myfamily.int) to detect if you are at the office
+    Set "Question" in Windows System Sounds to your desired alarm
+
+    
