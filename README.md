@@ -20,9 +20,7 @@ Block websites using the hosts file on Linux
 ## Run
 
     sudo python3 /media/data/GitHub/personal_projects/block_hosts/block.py
-    sudo python3 /media/data/GitHub/personal_projects/block_hosts/block.py --unblock
-    
-    
+    sudo python3 /media/data/GitHub/personal_projects/block_hosts/block.py --unblock 
 
     
 ## VOLUME
@@ -38,7 +36,6 @@ You can either send that HUGE powershell command, or set it up in your "powershe
     (echo . `"%USERPROFILE%\bashrc\windows\alias_scripts\profile.ps1`" ) >> "%ps1_path%"
 
 ## WINDOWS - choose a different sound when at the office
-    Set your network name (myfamily.int) to detect if you are at the office
-    Set "Question" in Windows System Sounds to your desired alarm
-
+    on_work_network: Right now just checks for the DNS server; if I'm at the office/on the VPN, it will beep instead of talking 
+    
     

@@ -10,6 +10,7 @@ from datetime import datetime
 from utils import *
 from powershell import volume_commands
 from volume import get_volume_windows
+import requests
 
 """
 * Run from Windows Python not supported/tested
@@ -119,10 +120,14 @@ def speak(phrase, delay=0, blocking=False):
 def system_beep(blocking=False):
     try:
         logger.debug("BEEP!!")
-        run_windows("[System.Media.SystemSounds]::Question.Play()", blocking=blocking, executable='powershell.exe')
+        # All of these should work
+        sound_command = """(New-Object System.Media.SoundPlayer $(Get-ChildItem -Path $env:windir\Media\Alarm03.wav).FullName).PlaySync()"""
+        # sound_command = """(New-Object System.Media.SoundPlayer 'C:\\Windows\\Media\\Alarm03.wav').PlaySync()"""
+        # sound_command = "[System.Media.SystemSounds]::Question.Play()" # edit going to System Sounds and changing QUESTION
+        # sound_command = [System.Console]::Beep()
+        out = run_windows(sound_command, blocking=blocking, executable=powershell)
     except Exception as e:
         print(f"An error occurred while beeping: {e}")
-
 
 def mute_speaker():
     return on_zoom_call() or (not LINUX and on_work_network() and not bluetooth_sound())
@@ -145,23 +150,36 @@ def on_zoom_call():
             logger.info("zoom call detected, not speaking")
             return True
     else:
-        task_list = run_windows("""cmd.exe /c tasklist /v /fi "imagename eq zoom.exe" """, blocking=True)
+        #task_list = run_windows("""cmd.exe /c tasklist /v /fi "imagename eq zoom.exe" """, blocking=True)
         #         if "zoom" in task_list.lower():
-        if "zoom meeting" in task_list.lower():
-            logger.info("zoom call detected, not speaking")
+        #if "zoom meeting" in task_list.lower() or "n/a" in task_list.lower():
+        #    logger.info("zoom call detected, not speaking")
+        #    return True
+        zoom_powershell = """if ($zoomProcess = Get-Process -Name Zoom -EA 0) { (Get-NetUDPEndpoint -OwningProcess $zoomProcess.Id -EA 0 | Measure-Object).Count } else { 0 }"""
+        output = run_windows(zoom_powershell, blocking=True, executable=powershell)
+        logger.debug(f"ZOOM OUTPUT: {output}")
+        if output != "0":
             return True
     return False
+
+def clean_powershell(output):
+    if isinstance(output,str):
+        return output.replace("Profile loaded successfully\n","").strip()
+    else:
+        return output
 
 def run_windows(command, blocking=True, executable=None):
     """ Run a system command on Linux using subprocess.Popen
         os.system randomly fails with the powershell tts commands and leaves program hanging
     """
-    command += " 2> nul"
+    if executable is None:
+        command += " 2> nul"
+
     logger.debug(command)
     if blocking:
         process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True, executable=executable) #.wait()
         output, error = process.communicate()
-        return output.decode()
+        return clean_powershell(output.decode())
     else:
         process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True, executable=executable)
         return process
@@ -371,14 +389,14 @@ def unblock_one(item="youtube"):
     output, error = process.communicate()
 
 def unblock_timer(duration=5, level=2, confirm_break=False):
-    break_message = f"Time for a {duration} minute break."
+    break_message = f"{duration} minute break."
     unblock_sites(level)
 
     try: # Allow user to end break early
         if not confirm_break:
             speak(break_message + " Starting now!", blocking=True)
         else:
-            speak_break = lambda :speak(break_message + " Push any key to start.", blocking=False)
+            speak_break = lambda :speak(break_message + " Push any key.", blocking=False)
             speak_break()
             I.prompt(break_message, commands=[speak_break])
         sleeper(duration)
@@ -445,10 +463,10 @@ def parser():
         #unblock_timer(level=opts.level)
         work_minutes=opts.break_mode[0] if opts.break_mode else 25
         break_minutes=opts.break_mode[1] if len(opts.break_mode)>1 else 5
-        work_message="Deep work for {} {}.".format(work_minutes, minutes_fmt(work_minutes))
+        work_message="Work for {} {}.".format(work_minutes, minutes_fmt(work_minutes))
         break_message="Break for {} {}."
-        
-        work_message += " Ready?" if opts.confirm_work else " GO! "
+        ready = "Push any key." # "Ready?"
+        work_message += f" {ready}" if opts.confirm_work else " GO! "
         #break_message += " Ready?" if opts.confirm_break else " GO! "
         
         while True:
@@ -457,15 +475,15 @@ def parser():
                 speak_work = lambda: speak(work_message, blocking=False)
                 speak_work()
                 if opts.confirm_work:
-                    I.prompt("Ready?", commands=[speak_work])
+                    I.prompt(f"{ready}", commands=[speak_work])
                     speak("GO!!")
                 block_sites(opts.level)
 
                 time_debt = sleeper(work_minutes)
 
                 adj_break_minutes = max(break_minutes-time_debt, 0)
-                unblock_timer(adj_break_minutes, level=opts.break_level, confirm_break=opts.confirm_break)
                 write_completed_cycles(epoch)
+                unblock_timer(adj_break_minutes, level=opts.break_level, confirm_break=opts.confirm_break)
 
     elif opts.lunch is not None:
         unblock_timer(30)
