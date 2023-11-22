@@ -1,3 +1,6 @@
+import tkinter as tk
+from tkinter import messagebox
+
 from pathlib import Path
 import argparse
 import sys
@@ -25,6 +28,7 @@ Block Level:
 
 """
 MUTE = False
+WSL = True
 powershell="/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
 cmd="/mnt/c/Windows/System32/cmd.exe"
 IDLE_TIMEOUT = 300
@@ -77,7 +81,7 @@ WSL_HOSTS=["G1G2Q13", "PW01AYJG"]
 
 def set_globals(linux=True):
     """ Run from Windows Python not supported/tested """
-    global LINUX, HOSTS_FILE_PATH, block_sites, prefix
+    global LINUX, HOSTS_FILE_PATH, block_sites, prefix, WSL
 
     if socket.gethostname() in WSL_HOSTS:
         linux=False
@@ -105,6 +109,7 @@ def speak(phrase, delay=0, blocking=False):
 
     if MUTE:
         logger.info("MUTED, not speaking")
+        show_dialog(phrase)
         return
     if LINUX:
         os.system('spd-say "{}"'.format(phrase))
@@ -116,6 +121,8 @@ def speak(phrase, delay=0, blocking=False):
                 system_beep(blocking=blocking)
         else:
             speak_windows(phrase, delay=delay, blocking=blocking)
+        if ENABLE_MESSAGE_BOXES:
+            show_dialog(phrase)
 
 def system_beep(blocking=False):
     try:
@@ -185,6 +192,30 @@ def run_windows(command, blocking=True, executable=None):
         return process
 
 
+def show_dialog(message):
+    """
+    Display a dialog box with the given message.
+
+    Args:
+        message (str): The message to display in the dialog box.
+    """
+    if WSL or not LINUX:
+        show_dialog_windows(message)
+    else:
+        show_dialog_tk(message)
+
+
+def show_dialog_windows(message):
+    powershell_command = f'{powershell} -Command "[System.Windows.MessageBox]::Show(\'{message}\')"'
+    powershell_command = f"{powershell} -Command \"Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('{message}')\""
+    print(powershell_command)
+    subprocess.run(powershell_command, shell=True)
+
+def show_dialog_tk(message):
+    root = tk.Tk()
+    root.withdraw()
+    messagebox.showinfo("Message", message)
+    root.destroy()
 
 def speak_windows(phrase, delay=0, blocking=False, message_volume=.5):
     #command = f"""{powershell} -Command Add-Type -AssemblyName System.Speech; (New-Object -TypeName System.Speech.Synthesis.SpeechSynthesizer).Speak('{phrase}')" """
@@ -391,7 +422,7 @@ def unblock_one(item="youtube"):
 def unblock_timer(duration=5, level=2, confirm_break=False):
     break_message = f"{duration} minute break."
     unblock_sites(level)
-
+    time_debt = 0
     try: # Allow user to end break early
         if not confirm_break:
             speak(break_message + " Starting now!", blocking=True)
@@ -399,10 +430,10 @@ def unblock_timer(duration=5, level=2, confirm_break=False):
             speak_break = lambda :speak(break_message + " Push any key.", blocking=False)
             speak_break()
             I.prompt(break_message, commands=[speak_break])
-        sleeper(duration)
+        time_debt = sleeper(duration)
     except Exception as e:
         logger.error(e)
-
+    return time_debt
 
 num2words = {1: 'One', 2: 'Two', 3: 'Three', 4: 'Four', 5: 'Five', \
              6: 'Six', 7: 'Seven', 8: 'Eight', 9: 'Nine', 10: 'Ten', \
@@ -423,7 +454,7 @@ def n2w(n):
 
 
 def parser():
-    global MUTE
+    global MUTE, ENABLE_MESSAGE_BOXES
     def parse_int_list(s):
         return [int(x.strip()) for x in s.split(',')]
 
@@ -443,15 +474,17 @@ def parser():
     parser.add_argument('--confirm_break', action="store_true")
     parser.add_argument('--mute', action="store_true")
     parser.add_argument('--confirm_work', action="store_true")
+    parser.add_argument('--no_message_box', action="store_true")
 
     opts = parser.parse_args()
     opts.level = int(opts.level)
 
     MUTE = opts.mute
+    ENABLE_MESSAGE_BOXES = not opts.no_message_box
 
     epoch = read_completed_cycles()
 
-    opts.confirm_work = True
+    #opts.confirm_work = True
     opts.confirm_break = True
 
     if opts.unblock_all:
@@ -461,7 +494,7 @@ def parser():
 
     elif opts.break_mode is not None:
         #unblock_timer(level=opts.level)
-        work_minutes=opts.break_mode[0] if opts.break_mode else 25
+        work_minutes=adj_work_minutes=opts.break_mode[0] if opts.break_mode else 25
         break_minutes=opts.break_mode[1] if len(opts.break_mode)>1 else 5
         work_message="Work for {} {}.".format(work_minutes, minutes_fmt(work_minutes))
         break_message="Break for {} {}."
@@ -479,11 +512,12 @@ def parser():
                     speak("GO!!")
                 block_sites(opts.level)
 
-                time_debt = sleeper(work_minutes)
+                time_debt = sleeper(adj_work_minutes)
 
                 adj_break_minutes = max(break_minutes-time_debt, 0)
                 write_completed_cycles(epoch)
-                unblock_timer(adj_break_minutes, level=opts.break_level, confirm_break=opts.confirm_break)
+                time_debt = unblock_timer(adj_break_minutes, level=opts.break_level, confirm_break=opts.confirm_break)
+                adj_work_minutes = max(work_minutes-time_debt, 0)
 
     elif opts.lunch is not None:
         unblock_timer(30)
