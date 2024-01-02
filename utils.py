@@ -1,3 +1,4 @@
+import platform
 import threading
 import time
 from datetime import datetime
@@ -96,6 +97,9 @@ class IdleTimeoutHandler:
         #print(f"user input: {user_input}")
         return user_input
 
+def is_wsl():
+    return 'microsoft' in platform.uname().release.lower()
+
 if __name__=="__main__":
     test_func = lambda : print("Default timeout func FTW")
     test_func2 = lambda : print("Timeout2 func FTW")
@@ -107,7 +111,3 @@ if __name__=="__main__":
     I.prompt("3. This is a test prompt? ")
     I.prompt("4. This is a test prompt? ", commands=test_func3)
     input("DONE")
-
-
-
-
