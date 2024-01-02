@@ -23,6 +23,9 @@ credentials*
 *credentials*
 .gitignore/
 
+# Windows doesn't like .nul file
+.nul
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

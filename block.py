@@ -19,12 +19,15 @@ import requests
 * Run from Windows Python not supported/tested
 * WSL block/unblock working with WUDO
 
+## Usage:
+python block 2
+
 ## Levels
 Block Level:
 0: Nothing blocked
-1: Twitter & Linked In
-2: Everything but Email
-3: Also Email
+1: X & LinkedIn
+2: 1 + Shopping, News
+3: 2+ Email, Youtube, StackExchange
 
 """
 MUTE = False
