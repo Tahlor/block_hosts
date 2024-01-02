@@ -31,7 +31,7 @@ Block Level:
 
 """
 MUTE = False
-WSL = True
+WSL = is_wsl()
 powershell="/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
 cmd="/mnt/c/Windows/System32/cmd.exe"
 IDLE_TIMEOUT = 300
@@ -97,7 +97,6 @@ def set_globals(linux=True):
         logger.info("ON LINUX")
 
     else:
-        WSL=True
         if WSL:
             HOSTS_FILE_PATH=r"/mnt/c/Windows/System32/drivers/etc/hosts"
             logger.info("ON WSL")
