@@ -462,7 +462,7 @@ def parser():
         return [int(x.strip()) for x in s.split(',')]
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('level', nargs='?', default=2)
+    parser.add_argument('level', nargs='?', default=3)
     parser.add_argument('--unblock', action="store_true")
     parser.add_argument('--unblock_all', action="store_true")
     parser.add_argument('--block', action="store_true")
