@@ -25,6 +25,7 @@ credentials*
 
 # Windows doesn't like .nul file
 .nul
+nul
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

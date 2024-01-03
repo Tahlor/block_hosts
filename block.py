@@ -251,6 +251,7 @@ def flush():
         flush_linux()
     else:
         flush_windows()
+
 def flush_linux():
     logger.info("flushing dns...")
     os.system("sudo service network-manager restart")
@@ -269,7 +270,7 @@ def minutes_fmt(time):
 
 def block_sites_linux(level=2):
     logger.info("blocking sites...")
-    websites = get_sites_by_level(level, block=True)
+    websites = get_sites_by_level(level, include_level=True)
     #logger.info(websites)
     logger.info(f"blocking {HOSTS_FILE_PATH}")
     with Path(HOSTS_FILE_PATH).open("w") as f:
@@ -282,10 +283,8 @@ def block_sites_linux(level=2):
 
 def block_sites_windows(level=2):
     logger.info("blocking sites...")
-    websites = get_sites_by_level(level, block=True)
-
+    websites = get_sites_by_level(level, include_level=True)
     logger.info(f"blocking {HOSTS_FILE_PATH}")
-    # temp_path="./hosts.tmp"
 
     temp_path = HOSTS_FILE_PATH
     with Path(temp_path).open("w") as f:
@@ -314,27 +313,28 @@ def whatamidoing(level, block):
         logger.info(f"You are UNblocking {' + '.join(blocking[level:])}")
 
 
-def get_sites_by_level(level=2, block=True):
-    """ block (bool): True: include lower levels (0,1,2...); if block=level2, also block level1
+def get_sites_by_level(level=2, include_level=True):
+    """ include_level (bool): True: include lower levels (0,1,2...); if block=level2, also block level1
                       False: include higher levels (4,3,...); if unblock level2, also unblock level3
     """
-    whatamidoing(level,block)
+    whatamidoing(level, include_level)
     websites = []
     for source in Path("./websites/").rglob("level*"):
         src_level = source.stem[-1]
         if src_level.isnumeric():
             src_level = int(src_level)
             # Unblock: only return sites at a lower block level than the current one
-            if (src_level < level and not block) or (src_level <= level and block):
+            if (src_level < level and not include_level) or (src_level <= level and include_level):
                 logger.info(f"Adding {source}")
                 websites += get_sites(source).split()
     return websites
 
-def unblock_sites(level=2):
+
+def set_blocking_level(level=2):
     """ Recreate hosts block file from scratch
     """
     logger.info("unblocking sites...")
-    websites = get_sites_by_level(level, block=False)
+    websites = get_sites_by_level(level)
 
     with Path( HOSTS_FILE_PATH).open("w") as f:
         f.write(prefix)
@@ -423,7 +423,8 @@ def unblock_one(item="youtube"):
 
 def unblock_timer(duration=5, level=2, confirm_break=False):
     break_message = f"{duration} minute break."
-    unblock_sites(level)
+    set_blocking_level(level)
+    logger.info(f"Setting blocking to level {level}")
     time_debt = 0
     try: # Allow user to end break early
         if not confirm_break:
@@ -480,6 +481,7 @@ def parser():
 
     opts = parser.parse_args()
     opts.level = int(opts.level)
+    print(opts)
 
     MUTE = opts.mute
     ENABLE_MESSAGE_BOXES = not opts.no_message_box
@@ -492,7 +494,7 @@ def parser():
     if opts.unblock_all:
         unblock_all()
     elif opts.unblock:
-        unblock_sites(opts.level)
+        set_blocking_level(opts.level)
 
     elif opts.break_mode is not None:
         #unblock_timer(level=opts.level)
@@ -527,7 +529,7 @@ def parser():
         speak("Blocking websites")
 
     elif opts.off:
-        unblock_sites(opts.level)
+        set_blocking_level(opts.level)
         remove_from_cron()
     elif opts.on:
         block_sites(opts.level)
@@ -539,7 +541,7 @@ def parser():
     elif opts.youtube is not None:
         unblock_one(opts.youtube)
     elif opts.unblock:
-        unblock_sites(opts.level)
+        set_blocking_level(opts.level - 1)
     else:
         block_sites(opts.level)
 
