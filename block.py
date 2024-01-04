@@ -333,7 +333,7 @@ def get_sites_by_level(level=2, include_level=True):
 def set_blocking_level(level=2):
     """ Recreate hosts block file from scratch
     """
-    logger.info("unblocking sites...")
+    logger.info(f"Setting blocking to level {level}")
     websites = get_sites_by_level(level)
 
     with Path( HOSTS_FILE_PATH).open("w") as f:
@@ -423,8 +423,6 @@ def unblock_one(item="youtube"):
 
 def unblock_timer(duration=5, level=2, confirm_break=False):
     break_message = f"{duration} minute break."
-    set_blocking_level(level)
-    logger.info(f"Setting blocking to level {level}")
     time_debt = 0
     try: # Allow user to end break early
         if not confirm_break:
@@ -433,6 +431,9 @@ def unblock_timer(duration=5, level=2, confirm_break=False):
             speak_break = lambda :speak(break_message + " Push any key.", blocking=False)
             speak_break()
             I.prompt(break_message, commands=[speak_break])
+
+        set_blocking_level(level)
+
         time_debt = sleeper(duration)
     except Exception as e:
         logger.error(e)
