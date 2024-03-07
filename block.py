@@ -495,7 +495,7 @@ def parser():
     if opts.unblock_all:
         unblock_all()
     elif opts.unblock:
-        set_blocking_level(opts.level)
+        set_blocking_level(0)
 
     elif opts.break_mode is not None:
         #unblock_timer(level=opts.level)
