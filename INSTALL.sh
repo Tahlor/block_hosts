@@ -1,5 +1,6 @@
 #!/bin/bash
 
+DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
 LOCAL_USER=${1-$(logname)}
 
 # 59 23 * * * python3 /home/taylor/bashrc/ext/block_hosts/block.py --on --user taylor > /home/taylor/bashrc/ext/block_hosts/BLOCK.log 2>&1 # PERSISTENT
@@ -37,3 +38,13 @@ fi
 
 #cd /var/spool/cron/crontabs
 #grep  'search string' *
+
+chmod +x $DIR/utils/sudo_write_to_hosts.sh
+# Add sudo_write_to_hosts to visudo if it's not there
+if [ ! -f /etc/sudoers.d/sudo_write_to_hosts ]; then
+    echo "Creating sudoers file for sudo_write_to_hosts.sh script"
+    touch /etc/sudoers.d/sudo_write_to_hosts
+    chmod 0440 /etc/sudoers.d/sudo_write_to_hosts
+    echo "taylor ALL=(root) NOPASSWD: $DIR/utils/sudo_write_to_hosts.sh" | EDITOR="tee -a" visudo -f /etc/sudoers.d/sudo_write_to_hosts
+fi
+

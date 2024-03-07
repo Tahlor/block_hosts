@@ -1,6 +1,5 @@
 import tkinter as tk
 from tkinter import messagebox
-
 from pathlib import Path
 import argparse
 import sys
@@ -34,6 +33,8 @@ MUTE = False
 WSL = is_wsl()
 powershell="/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
 cmd="/mnt/c/Windows/System32/cmd.exe"
+ROOT=Path(__file__).parent
+sudo_write_to_hosts_script = ROOT / "utils/sudo_write_to_hosts.sh"
 IDLE_TIMEOUT = 300
 logger = logging.getLogger("root")
 logger.setLevel(logging.INFO)
@@ -106,15 +107,25 @@ def set_globals(linux=True):
         prefix=read("./websites/windows_default").format(socket.gethostname())
         logger.info(HOSTS_FILE_PATH)
 
+
 def speak(phrase, delay=0, blocking=False):
     logger.info(phrase)
 
-    if MUTE:
+    if MUTE and not LINUX:
         logger.info("MUTED, not speaking")
         show_dialog(phrase)
         return
     if LINUX:
-        os.system('spd-say "{}"'.format(phrase))
+        print(f"SAYING {phrase}")
+        subprocess.Popen(f'/usr/bin/spd-say {phrase}', shell=True)
+        #env_vars = os.environ.copy()
+        #env_vars["DISPLAY"] = os.getenv("DISPLAY", ":1")
+        #env_vars["DBUS_SESSION_BUS_ADDRESS"] = "unix:path=/run/user/1000/bus"
+        #os.system(f'spd-say "{phrase}"')
+        #result = subprocess.run(['/usr/bin/spd-say', phrase], capture_output=True, text=True, env=env_vars)
+        #result = subprocess.run(['sudo', '-u', 'taylor', '-i' './say.sh', phrase], capture_output=True, text=True)
+        #print(result)
+        print("DONE")
     else:
         if on_zoom_call():
             pass
@@ -254,7 +265,9 @@ def flush():
 
 def flush_linux():
     logger.info("flushing dns...")
-    os.system("sudo service network-manager restart")
+    # Old systems?
+    #os.system("sudo service network-manager restart")
+    os.system("sudo systemctl restart NetworkManager.service")
 
 def flush_windows():
     #type blocked_hosts > hosts
@@ -271,15 +284,23 @@ def minutes_fmt(time):
 def block_sites_linux(level=2):
     logger.info("blocking sites...")
     websites = get_sites_by_level(level, include_level=True)
-    #logger.info(websites)
     logger.info(f"blocking {HOSTS_FILE_PATH}")
-    with Path(HOSTS_FILE_PATH).open("w") as f:
-        f.write("\n" + prefix)
 
-        for w in websites:
-            if w[0] != "#":
-                f.write("127.0.0.1 {} \n".format(w))
-                f.write("127.0.0.1 www.{} \n".format(w))
+    # Create long string
+    formatted_list = [prefix]
+    for w in websites:
+        if w[0] != "#":
+            formatted_list.extend([f"127.0.0.1 {w}",
+                                   f"127.0.0.1 www.{w}"
+                                   ])
+    formatted_str = "\n".join(formatted_list)
+
+    if False:
+        with Path(HOSTS_FILE_PATH).open("w") as f:
+            f.write(formatted_str)
+    else:
+        command = f"{sudo_write_to_hosts_script} '{formatted_str}'"
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
 
 def block_sites_windows(level=2):
     logger.info("blocking sites...")
@@ -457,13 +478,22 @@ def n2w(n):
             return 5
 
 
+
+def manual_preprocess(args):
+    # Assume if the first argument does not start with '-', it's meant to be 'level'
+    if args and not args[0].startswith('-'):
+        # Prepend '--level' to transform it into a keyword argument
+        args = ['--level'] + args
+    return args
+
+
 def parser():
     global MUTE, ENABLE_MESSAGE_BOXES
     def parse_int_list(s):
         return [int(x.strip()) for x in s.split(',')]
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('level', nargs='?', default=3)
+    parser.add_argument('--level', type=int, help='Level as keyword arg', dest='level')
     parser.add_argument('--unblock', action="store_true")
     parser.add_argument('--unblock_all', action="store_true")
     parser.add_argument('--block', action="store_true")
@@ -479,8 +509,9 @@ def parser():
     parser.add_argument('--mute', action="store_true")
     parser.add_argument('--confirm_work', action="store_true")
     parser.add_argument('--no_message_box', action="store_true")
+    args = manual_preprocess(sys.argv[1:])
 
-    opts = parser.parse_args()
+    opts = parser.parse_args(args)
     opts.level = int(opts.level)
     print(opts)
 

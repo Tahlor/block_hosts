@@ -4,12 +4,13 @@ import time
 from datetime import datetime
 from pathlib import  Path
 FILE_PARENT = Path(__file__).parent
-ROOT = FILE_PARENT / "logs"
+LOG_FOLDER = FILE_PARENT / "logs"
+LOG_FOLDER.mkdir(exist_ok=True, parents=True)
 TIMEOUT = 4
 
 def get_today_log_filename():
     filename = datetime.now().strftime('%Y-%m-%d') + '.log'
-    return ROOT / filename
+    return LOG_FOLDER / filename
 
 def read_completed_cycles():
     try:
