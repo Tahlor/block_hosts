@@ -118,13 +118,6 @@ def speak(phrase, delay=0, blocking=False):
     if LINUX:
         print(f"SAYING {phrase}")
         subprocess.Popen(f'/usr/bin/spd-say {phrase}', shell=True)
-        #env_vars = os.environ.copy()
-        #env_vars["DISPLAY"] = os.getenv("DISPLAY", ":1")
-        #env_vars["DBUS_SESSION_BUS_ADDRESS"] = "unix:path=/run/user/1000/bus"
-        #os.system(f'spd-say "{phrase}"')
-        #result = subprocess.run(['/usr/bin/spd-say', phrase], capture_output=True, text=True, env=env_vars)
-        #result = subprocess.run(['sudo', '-u', 'taylor', '-i' './say.sh', phrase], capture_output=True, text=True)
-        #print(result)
         print("DONE")
     else:
         if on_zoom_call():
@@ -292,15 +285,11 @@ def block_sites_linux(level=2):
         if w[0] != "#":
             formatted_list.extend([f"127.0.0.1 {w}",
                                    f"127.0.0.1 www.{w}"
-                                   ])
+                                   ]
+                                  )
     formatted_str = "\n".join(formatted_list)
-
-    if False:
-        with Path(HOSTS_FILE_PATH).open("w") as f:
-            f.write(formatted_str)
-    else:
-        command = f"{sudo_write_to_hosts_script} '{formatted_str}'"
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
+    command = f"{sudo_write_to_hosts_script} '{formatted_str}' '{HOSTS_FILE_PATH}'"
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
 
 def block_sites_windows(level=2):
     logger.info("blocking sites...")
@@ -319,8 +308,6 @@ def block_sites_windows(level=2):
     if temp_path != HOSTS_FILE_PATH:
         command=rf"""/mnt/c/Windows/System32/cmd.exe \c type {temp_path} > "{HOSTS_FILE_PATH}" """
         subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
-
-
     flush_windows()
 
 
@@ -355,15 +342,10 @@ def set_blocking_level(level=2):
     """ Recreate hosts block file from scratch
     """
     logger.info(f"Setting blocking to level {level}")
-    websites = get_sites_by_level(level)
-
-    with Path( HOSTS_FILE_PATH).open("w") as f:
-        f.write(prefix)
-        for w in websites:
-            if w[0].strip() != "#":
-                f.write("127.0.0.1 {} \n".format(w))
-                f.write("127.0.0.1 www.{} \n".format(w))
-
+    if LINUX:
+        block_sites_linux(level)
+    else:
+        block_sites_windows(level)
     flush()
 
 def unblock_all():

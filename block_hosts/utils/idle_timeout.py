@@ -1,31 +1,5 @@
-import platform
-import threading
 import time
-from datetime import datetime
-from pathlib import  Path
-FILE_PARENT = Path(__file__).parent
-LOG_FOLDER = FILE_PARENT / "logs"
-LOG_FOLDER.mkdir(exist_ok=True, parents=True)
-TIMEOUT = 4
-
-def get_today_log_filename():
-    filename = datetime.now().strftime('%Y-%m-%d') + '.log'
-    return LOG_FOLDER / filename
-
-def read_completed_cycles():
-    try:
-        with open(get_today_log_filename(), 'r') as log_file:
-            completed_cycles = int(log_file.read().strip())
-    except (FileNotFoundError, ValueError):
-        completed_cycles = 0
-
-    return completed_cycles
-
-
-def write_completed_cycles(completed_cycles):
-    with open(get_today_log_filename(), 'w') as log_file:
-        log_file.write(str(completed_cycles))
-
+import threading
 
 class IdleTimeoutHandler:
     def __init__(self, commands=None, run_once=False, timeout=60):
@@ -71,7 +45,6 @@ class IdleTimeoutHandler:
     def user_interaction(self):
         self.last_interaction_time = time.time()
 
-
     @staticmethod
     def validate_commands(commands):
         if commands and not isinstance(commands, (tuple,list)):
@@ -98,8 +71,6 @@ class IdleTimeoutHandler:
         #print(f"user input: {user_input}")
         return user_input
 
-def is_wsl():
-    return 'microsoft' in platform.uname().release.lower()
 
 if __name__=="__main__":
     test_func = lambda : print("Default timeout func FTW")
