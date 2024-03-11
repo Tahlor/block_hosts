@@ -16,7 +16,7 @@ except:
             sys.stdout.flush()
             yield m
 
-root = Path(os.path.dirname(os.path.realpath(__file__)))
+root = Path(__file__).resolve().parent
 _root = root.as_posix()
 os.chdir(_root)
 

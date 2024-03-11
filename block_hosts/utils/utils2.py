@@ -19,7 +19,7 @@ from pathlib import Path
 
 logger = logging
 
-ROOT = Path(__file__).parent
+ROOT = Path(__file__).resolve().parent
 POWERSHELL_PATH="/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
 sudo_write_to_hosts_script = ROOT / "sudo_write_to_hosts.sh"
 

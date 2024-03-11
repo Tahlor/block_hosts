@@ -4,7 +4,7 @@ import time
 from datetime import datetime
 from pathlib import  Path
 
-FILE_PARENT = Path(__file__).parent
+FILE_PARENT = Path(__file__).resolve().parent
 LOG_FOLDER = FILE_PARENT / "logs"
 LOG_FOLDER.mkdir(exist_ok=True, parents=True)
 TIMEOUT = 4

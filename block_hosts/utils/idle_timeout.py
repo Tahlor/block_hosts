@@ -66,9 +66,7 @@ class IdleTimeoutHandler:
 
             if self.idle_thread and self.idle_thread.is_alive():
                 self.idle_thread.join()
-            #print("Killed thread")
 
-        #print(f"user input: {user_input}")
         return user_input
 
 

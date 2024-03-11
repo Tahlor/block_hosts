@@ -1,19 +1,23 @@
+from pathlib import Path
+import sys
+ROOT=Path(__file__).resolve().parent.parent
+sys.path.append(str(ROOT))
 from tqdm import tqdm
 import argparse
 import logging
-from pathlib import Path
 import os
 import socket
 import subprocess
 from datetime import datetime
 from time import sleep
-import sys
 import requests
 import tkinter as tk
 from tkinter import messagebox
 from block_hosts.utils.idle_timeout import IdleTimeoutHandler
 from block_hosts.utils.utils2 import *
 from block_hosts.utils.utils import *
+
+ROOT = Path(__file__).resolve().parent
 
 logger = logging.getLogger("root")
 logger.setLevel(logging.INFO)
@@ -30,13 +34,13 @@ class SiteBlocker:
         self.WSL = self.is_wsl()
         self.powershell = "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
         self.cmd = "/mnt/c/Windows/System32/cmd.exe"
-        self.ROOT = Path(__file__).parent
+        self.ROOT = Path(__file__).resolve().parent
         self.website_level_definitions = self.ROOT / "websites"
         self.IDLE_TIMEOUT = 300
         self.WSL_HOSTS = ["G1G2Q13", "PW01AYJG"]
         self.linux, self.hosts_path, self.prefix = self.set_globals()
         self.MUTE = False
-        self.ENABLE_MESSAGE_BOXES = True
+        self.use_message_boxes = self.opts.use_message_boxes
         self.I = IdleTimeoutHandler()
         self.epoch = read_completed_cycles()
 
@@ -58,7 +62,7 @@ class SiteBlocker:
                 hosts_path = r"/mnt/c/Windows/System32/drivers/etc/hosts"
             else:
                 hosts_path = r"C:\Windows\System32\drivers\etc\hosts"
-            prefix = self.read("./websites/windows_default").format(socket.gethostname())
+            prefix = self.read(ROOT / "./websites/windows_default").format(socket.gethostname())
 
         logger.info(hosts_path)
         return on_linux, hosts_path, prefix
@@ -168,7 +172,10 @@ class SiteBlocker:
             else:
                 speak_break = lambda :self.speak(break_message + " Push any key.", blocking=False)
                 speak_break()
-                self.I.prompt(break_message, commands=[speak_break])
+                if self.use_message_boxes:
+                    self.show_dialog(break_message)
+                else:
+                    self.I.prompt(break_message, commands=[speak_break])
 
             self.set_blocking_level(level)
 
@@ -192,13 +199,10 @@ class SiteBlocker:
         logger.info(phrase)
         if self.MUTE:
             logger.info("MUTED, not speaking")
-            self.show_dialog(phrase)
             return
         logger.info(f"SAYING {phrase}")
         speak_linux(phrase, delay=delay, blocking=blocking)
         logger.info("DONE")
-        if self.ENABLE_MESSAGE_BOXES:
-            self.show_dialog(phrase)
 
     def mute(self):
         return on_zoom_call_windows() or (not self.linux and on_work_network() and not bluetooth_sound())
@@ -208,7 +212,6 @@ class SiteBlocker:
 
         if self.MUTE:
             logger.info("MUTED, not speaking")
-            self.show_dialog(phrase)
             return
 
         if on_zoom_call_windows():
@@ -218,8 +221,6 @@ class SiteBlocker:
                 self.system_beep(blocking=blocking)
         else:
             speak_windows(phrase, delay=delay, blocking=blocking)
-        if self.ENABLE_MESSAGE_BOXES:
-            self.show_dialog(phrase)
 
     def handle_break_mode(self):
         # unblock_timer(level=opts.level)
@@ -237,8 +238,12 @@ class SiteBlocker:
             speak_work = lambda: self.speak(work_message, blocking=False)
             speak_work()
             if self.opts.confirm_work:
-                self.I.prompt(f"{ready}", commands=[speak_work])
+                if self.use_message_boxes:
+                    self.show_dialog(work_message)
+                else:
+                    self.I.prompt(f"{ready}", commands=[speak_work])
                 self.speak("GO!!")
+
             self.block_sites(self.opts.level)
 
             time_debt = self.sleeper(adj_work_minutes)
@@ -275,7 +280,7 @@ class SiteBlocker:
             self.block_sites(self.opts.level)
 
 def parser(args=None):
-    global MUTE, ENABLE_MESSAGE_BOXES
+    global MUTE
     def parse_int_list(s):
         return [int(x.strip()) for x in s.split(',')]
 
@@ -299,10 +304,10 @@ def parser(args=None):
     parser.add_argument('--user', default="taylor")
     parser.add_argument('--youtube', nargs='?', const="youtube", type=str)
     parser.add_argument('--site', default=None)
-    parser.add_argument('--confirm_break', action="store_true")
+    parser.add_argument('--skip_confirm_break', action="store_true")
     parser.add_argument('--mute', action="store_true")
-    parser.add_argument('--confirm_work', action="store_true")
-    parser.add_argument('--no_message_box', action="store_true")
+    parser.add_argument('--skip_confirm_work', action="store_true")
+    parser.add_argument('--dont_use_message_boxes', action="store_true")
 
     if isinstance(args, str):
         import shlex
@@ -310,10 +315,12 @@ def parser(args=None):
     else:
         args = sys.argv[1:]
     args = manual_preprocess(args)
+    print(f'RAW ARGS {args}')
     opts = parser.parse_args(args)
-
+    opts.confirm_break = not opts.skip_confirm_break
+    opts.confirm_work = not opts.skip_confirm_work
+    opts.use_message_boxes = not opts.dont_use_message_boxes
     MUTE = opts.mute
-    ENABLE_MESSAGE_BOXES = not opts.no_message_box
 
     return opts
 
@@ -321,9 +328,13 @@ def main(args=None):
     opts = parser(args)
     opts.confirm_break = True
     blocker = SiteBlocker(opts)
+    print(opts)
     blocker.execute()
 
 
 if __name__ == "__main__":
-    args = "3 --break_mode --no_message_box --break_level 2"
-    main(args)
+    if False:
+        args = "3 --break_mode --break_level 2"
+    else:
+        args = None
+    main()
