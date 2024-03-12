@@ -40,11 +40,14 @@ fi
 #grep  'search string' *
 
 chmod +x $DIR/utils/sudo_write_to_hosts.sh
+
 # Add sudo_write_to_hosts to visudo if it's not there
 if [ ! -f /etc/sudoers.d/sudo_write_to_hosts ]; then
     echo "Creating sudoers file for sudo_write_to_hosts.sh script"
-    touch /etc/sudoers.d/sudo_write_to_hosts
-    chmod 0440 /etc/sudoers.d/sudo_write_to_hosts
-    echo "taylor ALL=(root) NOPASSWD: $DIR/utils/sudo_write_to_hosts.sh" | EDITOR="tee -a" visudo -f /etc/sudoers.d/sudo_write_to_hosts
+    new_sudoers_file="/etc/sudoers.d/block_hosts"
+    touch $new_sudoers_file
+    chmod 0440 $new_sudoers_file
+    echo "taylor ALL=(root) NOPASSWD: $DIR/utils/sudo_write_to_hosts.sh" | EDITOR="tee -a" visudo -f $new_sudoers_file
+    echo "taylor ALL=(root) NOPASSWD: $DIR/utils/sudo_restart_network.sh" | EDITOR="tee -a" visudo -f $new_sudoers_file
 fi
 

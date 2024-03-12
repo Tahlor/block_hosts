@@ -56,7 +56,7 @@ class SiteBlocker:
 
         if on_linux:
             hosts_path = "/etc/hosts"
-            prefix = self.read("./websites/linux_default").format(socket.gethostname())
+            prefix = self.read(ROOT / "./websites/linux_default").format(socket.gethostname())
         else:
             if self.WSL:
                 hosts_path = r"/mnt/c/Windows/System32/drivers/etc/hosts"
@@ -250,8 +250,9 @@ class SiteBlocker:
 
             adj_break_minutes = max(break_minutes - time_debt, 0)
             write_completed_cycles(self.epoch)
-            time_debt = self.unblock_timer(adj_break_minutes, level=self.opts.break_level,
-                                      confirm_break=self.opts.confirm_break)
+            time_debt = self.unblock_timer(adj_break_minutes,
+                                           level=self.opts.break_level,
+                                           confirm_break=self.opts.confirm_break)
             adj_work_minutes = max(work_minutes - time_debt, 0)
 
     def execute(self):
@@ -292,7 +293,7 @@ def parser(args=None):
         return args
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--level', type=int, help='Level as keyword arg', dest='level')
+    parser.add_argument('--level', type=int, help='Level as keyword arg', dest='level', default=3)
     parser.add_argument('--unblock', action="store_true")
     parser.add_argument('--unblock_all', action="store_true")
     parser.add_argument('--block', action="store_true")
@@ -334,7 +335,8 @@ def main(args=None):
 
 if __name__ == "__main__":
     if False:
-        args = "3 --break_mode --break_level 2"
+        args = "3 --break_mode 25,5 --break_level 2"
+        #args = "--level 0"
     else:
         args = None
-    main()
+    main(args=args)

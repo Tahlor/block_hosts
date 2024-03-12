@@ -16,6 +16,7 @@ from block_hosts.volume import get_volume_windows
 import requests
 import logging
 from pathlib import Path
+import tempfile
 
 logger = logging
 
@@ -42,7 +43,12 @@ def n2w(n):
             return 5
 
 def speak_linux(phrase, delay=0, blocking=False):
-    subprocess.Popen(f'/usr/bin/spd-say "{phrase}"', shell=True)
+    if delay:
+        sleep(delay)
+    if blocking:
+        subprocess.Popen(f'/usr/bin/spd-say "{phrase}"', shell=True).wait()
+    else:
+        subprocess.Popen(f'/usr/bin/spd-say "{phrase}"', shell=True)
 
 def speak_windows(phrase, delay=0, blocking=False, message_volume=.5):
     get_volume = """$CurrentVolume = [Audio]::Volume;"""
@@ -156,9 +162,9 @@ def show_dialog_tk(message):
 
 def flush_linux():
     logger.info("flushing dns...")
-    # Old systems?
     #os.system("sudo service network-manager restart")
-    os.system("sudo systemctl restart NetworkManager.service")
+    #os.system("sudo systemctl restart NetworkManager.service")
+    os.system(f"sudo {str(ROOT)}/sudo_restart_network.sh")
 
 def flush_windows():
     #type blocked_hosts > hosts
@@ -173,8 +179,26 @@ def minutes_fmt(time):
         return "minutes"
 
 def write_to_hosts_linux(formatted_str, path=None):
-    command = f"{sudo_write_to_hosts_script} '{formatted_str}' '{path}'"
+    command = f"sudo {sudo_write_to_hosts_script} '{formatted_str}' '{path}'"
     process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
+
+
+def write_to_hosts_linux(formatted_str: str, path: str = "/etc/hosts"):
+    """
+    Update the /etc/hosts file with new content.
+
+    Args:
+        formatted_str (str): The new content for the /etc/hosts file.
+        script_path (str): Path to the bash script for updating /etc/hosts.
+        path (str, optional): The path to the /etc/hosts file. Defaults to "/etc/hosts".
+    """
+    # Create a temporary file
+    with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+        tmp_file_path = Path(tmp_file.name)
+        tmp_file_path.write_text(formatted_str)
+    command = ["sudo", sudo_write_to_hosts_script, str(tmp_file_path), path]
+    result = subprocess.run(command, check=True)
+    tmp_file_path.unlink()
 
 def write_to_hosts_windows(formatted_str, path=None):
     with Path(path).open("w") as f:
