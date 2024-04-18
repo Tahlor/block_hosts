@@ -140,7 +140,11 @@ def run_windows(command, blocking=True, executable=None):
     if executable is None:
         command += " 2> nul"
 
-    logger.debug(command)
+    command_no_linebreaks = command.replace("\n"," ")
+    #logger.info("""{} -Command "& {{ {} }} " """.format(executable, command_no_linebreaks))
+    #logger.info("""{} -Command "& {{ {} }} " """.format(executable, command_no_linebreaks))
+    logger.debug(f'{executable} -Command "& {{{{ {command_no_linebreaks} }}}}"')
+
     if blocking:
         process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True, executable=executable) #.wait()
         output, error = process.communicate()
