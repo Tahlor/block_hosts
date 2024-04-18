@@ -46,9 +46,9 @@ def speak_linux(phrase, delay=0, blocking=False):
     if delay:
         sleep(delay)
     if blocking:
-        subprocess.Popen(f'/usr/bin/spd-say "{phrase}"', shell=True).wait()
+        subprocess.Popen(f'/usr/bin/spd-say "{phrase}" --volume -60', shell=True).wait()
     else:
-        subprocess.Popen(f'/usr/bin/spd-say "{phrase}"', shell=True)
+        subprocess.Popen(f'/usr/bin/spd-say "{phrase}" --volume -60', shell=True)
 
 def speak_windows(phrase, delay=0, blocking=False, message_volume=.5):
     get_volume = """$CurrentVolume = [Audio]::Volume;"""
