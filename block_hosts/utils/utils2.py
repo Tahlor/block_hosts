@@ -154,7 +154,11 @@ def run_windows(command, blocking=True, executable=None):
         return process
 
 def show_dialog_windows(message):
-    powershell_command = f"{POWERSHELL_PATH} -Command \"Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('{message}')\""
+    #powershell_command = f"""{POWERSHELL_PATH} -Command "& {{Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('{message}')}}""""
+    powershell_command = (
+        f'{POWERSHELL_PATH} -Command "& {{Add-Type -AssemblyName System.Windows.Forms; '
+        f'[System.Windows.Forms.MessageBox]::Show(\'{message}\')}}"'
+    )
     print(powershell_command)
     subprocess.run(powershell_command, shell=True)
 
