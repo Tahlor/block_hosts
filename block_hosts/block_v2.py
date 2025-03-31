@@ -256,10 +256,13 @@ class SiteBlocker:
             adj_work_minutes = max(work_minutes - time_debt, 0)
 
     def execute(self):
-        # This method consolidates the main logic and replaces the standalone main() function
+        """ block --youtube will block everything and unblock youtube
+            unblock --youtube will ONLY unblock youtube
+        """
+        done = False
         if self.opts.unblock_all:
             self.unblock_all()
-        elif self.opts.unblock:
+        elif self.opts.unblock and not self.opts.youtube and not self.opts.site:
             self.set_blocking_level(0)
         elif self.opts.break_mode is not None:
             self.handle_break_mode()
@@ -271,14 +274,42 @@ class SiteBlocker:
             self.block_sites(self.opts.level)
         elif self.opts.block:
             self.block_sites(self.opts.level)
-        elif self.opts.site:
-            unblock_one(self.opts.site)
-        elif self.opts.youtube is not None:
-            unblock_one(self.opts.youtube)
-        elif self.opts.unblock:
-            self.set_blocking_level(self.opts.level - 1)
         else:
             self.block_sites(self.opts.level)
+
+        if self.opts.site:
+            remove_sites_entries_in_hosts_file(self.hosts_path, self.opts.site)
+        if self.opts.youtube:
+            unblock_youtube_in_hosts_file(self.hosts_path)
+
+
+
+def remove_entries_by_keyword_from_hosts_file(hosts_file: Path, keyword: str) -> None:
+    """
+    Reads the hosts file and removes any lines that contain the given keyword
+    (case insensitive), then writes back the filtered content.
+    """
+    hosts_file = Path(hosts_file)
+    # Read the original hosts file lines
+    original_lines = hosts_file.read_text(encoding='utf-8').splitlines()
+    # Filter out any lines that contain the keyword (ignoring case)
+    filtered_lines = [line for line in original_lines if keyword.lower() not in line.lower()]
+    # Write the cleaned lines back to the hosts file
+    hosts_file.write_text("\n".join(filtered_lines), encoding='utf-8')
+
+def unblock_youtube_in_hosts_file(hosts_file: Path) -> None:
+    """
+    Unblocks YouTube by removing any line with a partial match for "youtube".
+    """
+    remove_entries_by_keyword_from_hosts_file(hosts_file, "youtube")
+
+def remove_sites_entries_in_hosts_file(hosts_file: Path, site_keywords: list) -> None:
+    """
+    For each domain provided in site_keywords, remove any hosts file entry
+    that contains a partial match.
+    """
+    for site_keyword in site_keywords:
+        remove_entries_by_keyword_from_hosts_file(hosts_file, site_keyword)
 
 def parser(args=None):
     global MUTE
@@ -315,10 +346,10 @@ def parser(args=None):
                         help='Temporarily disable blocking for a lunch break of specified duration in minutes (default: 30).')
     parser.add_argument('--user', default="taylor",
                         help='Specify the username for the session (default: "taylor").')
-    parser.add_argument('--youtube', nargs='?', const="youtube", type=str,
-                        help='Unblock YouTube specifically. If no additional argument is provided, defaults to "youtube".')
-    parser.add_argument('--site', default=None,
-                        help='Unblock a specific website. Provide the site URL or domain as the argument.')
+    parser.add_argument('--youtube', action='store_true',
+                        help='Flag to unblock YouTube by removing related entries from the hosts file')
+    parser.add_argument('--site', nargs='+',
+                        help='List of domains to remove any partial match from the hosts file')
     parser.add_argument('--skip_confirm_break', action="store_true",
                         help='Skip confirmation prompt before initiating break intervals in break mode.')
     parser.add_argument('--mute', action="store_true",
