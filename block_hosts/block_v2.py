@@ -292,24 +292,42 @@ def parser(args=None):
             args = ['--level'] + args
         return args
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--level', type=int, help='Level as keyword arg', dest='level', default=3)
-    parser.add_argument('--unblock', action="store_true")
-    parser.add_argument('--unblock_all', action="store_true")
-    parser.add_argument('--block', action="store_true")
-    parser.add_argument('--off', action="store_true")
-    parser.add_argument('--on', action="store_true")
-    parser.add_argument('--break_mode', nargs='?', type=parse_int_list, const=[25, 5], default=None)
-    parser.add_argument('--break_level', default=1, type=int, help="Blocking level during break")
-    parser.add_argument('--lunch', nargs='?', const=30, type=int)
-    parser.add_argument('--user', default="taylor")
-    parser.add_argument('--youtube', nargs='?', const="youtube", type=str)
-    parser.add_argument('--site', default=None)
-    parser.add_argument('--skip_confirm_break', action="store_true")
-    parser.add_argument('--mute', action="store_true")
-    parser.add_argument('--skip_confirm_work', action="store_true")
-    parser.add_argument('--dont_use_message_boxes', action="store_true")
-
+    parser = argparse.ArgumentParser(
+        description="A website blocking utility that modifies the system hosts file to block distracting websites based on configurable block levels and break cycles. Use the various options to block/unblock sites or to start a work/break cycle."
+    )
+    parser.add_argument('--level', type=int, dest='level', default=3,
+                        help='Set the blocking intensity level. Websites from levels up to this value will be blocked. Higher levels block more distracting sites. (default: 3)')
+    parser.add_argument('--unblock', action="store_true",
+                        help='Disable website blocking by setting the block level to 0.')
+    parser.add_argument('--unblock_all', action="store_true",
+                        help='Remove all website blocking rules and revert the hosts file to its initial state.')
+    parser.add_argument('--block', action="store_true",
+                        help='Force blocking of websites using the specified block level.')
+    parser.add_argument('--off', action="store_true",
+                        help='Apply a blocking configuration based on the provided level (alias for setting blocking level).')
+    parser.add_argument('--on', action="store_true",
+                        help='Enable website blocking according to the specified level.')
+    parser.add_argument('--break_mode', nargs='?', type=parse_int_list, const=[25, 5], default=None,
+                        help='Enter work/break mode with a cycle time. Provide two comma-separated values (work_minutes, break_minutes), e.g., "25,5" (default: 25,5).')
+    parser.add_argument('--break_level', default=1, type=int,
+                        help='Specify the blocking level to use during break intervals (default: 1; typically less restrictive).')
+    parser.add_argument('--lunch', nargs='?', const=30, type=int,
+                        help='Temporarily disable blocking for a lunch break of specified duration in minutes (default: 30).')
+    parser.add_argument('--user', default="taylor",
+                        help='Specify the username for the session (default: "taylor").')
+    parser.add_argument('--youtube', nargs='?', const="youtube", type=str,
+                        help='Unblock YouTube specifically. If no additional argument is provided, defaults to "youtube".')
+    parser.add_argument('--site', default=None,
+                        help='Unblock a specific website. Provide the site URL or domain as the argument.')
+    parser.add_argument('--skip_confirm_break', action="store_true",
+                        help='Skip confirmation prompt before initiating break intervals in break mode.')
+    parser.add_argument('--mute', action="store_true",
+                        help='Mute speech notifications (disable voice feedback).')
+    parser.add_argument('--skip_confirm_work', action="store_true",
+                        help='Skip confirmation prompt before starting work intervals in break mode.')
+    parser.add_argument('--dont_use_message_boxes', action="store_true",
+                        help='Disable graphical message boxes for prompts; use command-line prompts instead.')
+                        
     if isinstance(args, str):
         import shlex
         args = shlex.split(args)
