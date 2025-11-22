@@ -17,6 +17,7 @@ import requests
 import logging
 from pathlib import Path
 import tempfile
+from block_hosts.utils.hosts_file_manager import write_managed_section_to_hosts_file
 
 logger = logging
 
@@ -186,31 +187,45 @@ def minutes_fmt(time):
     else:
         return "minutes"
 
-def write_to_hosts_linux(formatted_str, path=None):
-    command = f"sudo {sudo_write_to_hosts_script} '{formatted_str}' '{path}'"
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
-
-
 def write_to_hosts_linux(formatted_str: str, path: str = "/etc/hosts"):
     """
-    Update the /etc/hosts file with new content.
+    Update the /etc/hosts file with new managed content, preserving unmanaged section.
 
     Args:
-        formatted_str (str): The new content for the /etc/hosts file.
-        script_path (str): Path to the bash script for updating /etc/hosts.
+        formatted_str (str): The managed content for the /etc/hosts file.
         path (str, optional): The path to the /etc/hosts file. Defaults to "/etc/hosts".
     """
-    # Create a temporary file
-    with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+    from block_hosts.utils.hosts_file_manager import (
+        read_hosts_file,
+        backup_unmanaged_section,
+        build_hosts_file_content,
+    )
+    
+    hosts_path = Path(path)
+    unmanaged_section, _ = read_hosts_file(hosts_path)
+    backup_unmanaged_section(unmanaged_section, hosts_path)
+    
+    complete_content = build_hosts_file_content(unmanaged_section, formatted_str)
+    
+    # Create a temporary file with the complete content
+    with tempfile.NamedTemporaryFile(mode='w', delete=False, encoding='utf-8') as tmp_file:
         tmp_file_path = Path(tmp_file.name)
-        tmp_file_path.write_text(formatted_str)
-    command = ["sudo", sudo_write_to_hosts_script, str(tmp_file_path), path]
+        tmp_file_path.write_text(complete_content, encoding='utf-8')
+    
+    # Use sudo to write the complete file
+    command = ["sudo", str(sudo_write_to_hosts_script), str(tmp_file_path), str(hosts_path)]
     result = subprocess.run(command, check=True)
     tmp_file_path.unlink()
 
 def write_to_hosts_windows(formatted_str, path=None):
-    with Path(path).open("w") as f:
-        f.write(formatted_str)
+    """
+    Update the Windows hosts file with new managed content, preserving unmanaged section.
+
+    Args:
+        formatted_str (str): The managed content for the hosts file.
+        path (str): The path to the hosts file.
+    """
+    write_managed_section_to_hosts_file(formatted_str, Path(path))
 
 def move_file_windows(src, dest):
     """ May be useful on windows if you can't directly write to a file

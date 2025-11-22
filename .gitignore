@@ -1,6 +1,5 @@
 backup_cron
 _my_cron
-hosts_backups/
 
 # Passwords and cookies
 password.txt
@@ -118,6 +117,9 @@ venv2/
 
 # Rope project settings
 .ropeproject
+
+# block_hosts backup files
+.block_hosts_backup/
 
 # Pycharm project settings
 .idea/
