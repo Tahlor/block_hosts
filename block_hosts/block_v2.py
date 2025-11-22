@@ -43,6 +43,8 @@ class SiteBlocker:
         self.use_message_boxes = self.opts.use_message_boxes
         self.I = IdleTimeoutHandler()
         self.epoch = read_completed_cycles()
+        self.backup_dir = self.ROOT / "hosts_backups"
+        self.backup_dir.mkdir(exist_ok=True)
 
     @staticmethod
     def is_wsl():
@@ -73,21 +75,127 @@ class SiteBlocker:
             content = f.read()
         return content
 
+    @staticmethod
+    def read_hosts_file_with_encoding(hosts_path):
+        """Read hosts file with explicit encoding handling for Windows compatibility."""
+        path = Path(hosts_path)
+        if not path.exists():
+            return None
+        try:
+            with path.open(encoding='utf-8', errors='replace') as f:
+                return f.read()
+        except Exception as e:
+            logger.warning(f"Could not read hosts file at {hosts_path}: {e}")
+            return None
+
+    def backup_hosts_file(self):
+        """Create a timestamped backup of the hosts file before modification."""
+        hosts_content = self.read_hosts_file_with_encoding(self.hosts_path)
+        if hosts_content is None:
+            logger.warning(f"Hosts file does not exist at {self.hosts_path}, skipping backup")
+            return
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_filename = f"hosts_backup_{timestamp}.txt"
+        backup_path = self.backup_dir / backup_filename
+        
+        try:
+            backup_path.write_text(hosts_content, encoding='utf-8')
+            logger.info(f"Backed up hosts file to {backup_path}")
+        except Exception as e:
+            logger.error(f"Failed to backup hosts file: {e}")
+
+    def read_existing_hosts_file(self):
+        """Read the current hosts file, returning None if it doesn't exist."""
+        return self.read_hosts_file_with_encoding(self.hosts_path)
+
+    @staticmethod
+    def normalize_hosts_line(line):
+        """Normalize a hosts file line for comparison (handles whitespace, tabs, etc.)."""
+        parts = line.split()
+        if len(parts) >= 2:
+            return f"{parts[0].lower()} {' '.join(parts[1:]).lower()}"
+        return line.strip().lower()
+
+    def build_normalized_prefix_lines_set(self):
+        """Build a set of normalized prefix lines to avoid duplicating default entries."""
+        prefix_lines = set()
+        for line in self.prefix.splitlines():
+            normalized = self.normalize_hosts_line(line)
+            if normalized:
+                prefix_lines.add(normalized)
+        return prefix_lines
+
+    def build_blocking_entries_set_from_websites(self, websites_to_block):
+        """Build a set of normalized blocking entries from a list of websites."""
+        our_entries = set()
+        for website in websites_to_block:
+            if website[0] != "#":
+                our_entries.add(self.normalize_hosts_line(f"127.0.0.1 {website}"))
+                our_entries.add(self.normalize_hosts_line(f"127.0.0.1 www.{website}"))
+        return our_entries
+
+    def extract_preserved_entries(self, existing_content, our_blocking_entries):
+        """Extract all lines from existing hosts file that are NOT our blocking entries.
+        
+        This preserves legitimate mappings, comments, and other entries.
+        """
+        if not existing_content:
+            return []
+        
+        prefix_lines = self.build_normalized_prefix_lines_set()
+        preserved_lines = []
+        
+        for line in existing_content.splitlines():
+            normalized = self.normalize_hosts_line(line)
+            
+            if not normalized:
+                preserved_lines.append("")
+                continue
+            
+            if normalized in our_blocking_entries or normalized in prefix_lines:
+                continue
+            
+            preserved_lines.append(line)
+        
+        return preserved_lines
+
+    def build_hosts_file_content(self, blocking_websites, preserved_lines):
+        """Build the complete hosts file content from components."""
+        content_parts = [self.prefix]
+        
+        for website in blocking_websites:
+            if website[0] != "#":
+                content_parts.extend([
+                    f"127.0.0.1 {website}",
+                    f"127.0.0.1 www.{website}"
+                ])
+        
+        if preserved_lines:
+            content_parts.append("")
+            content_parts.extend(preserved_lines)
+        
+        return "\n".join(content_parts)
+
+    def get_all_websites_from_all_levels(self):
+        """Get all websites from all level files, regardless of level."""
+        all_websites = []
+        for source in Path(self.website_level_definitions).rglob("level*"):
+            if source.stem[-1].isnumeric():
+                all_websites += get_sites(source).split()
+        return all_websites
+
     def create_host_str(self, level):
+        """Create the hosts file content, preserving existing legitimate entries."""
         logger.info("blocking sites...")
-        websites = self.get_sites_by_level(level, include_level=True)
+        blocking_websites = self.get_sites_by_level(level, include_level=True)
         logger.info(f"prepping {self.hosts_path}")
 
-        # Create long string
-        formatted_list = [self.prefix]
-        for w in websites:
-            if w[0] != "#":
-                formatted_list.extend([f"127.0.0.1 {w}",
-                                       f"127.0.0.1 www.{w}"
-                                       ]
-                                      )
-        formatted_str = "\n".join(formatted_list)
-        return formatted_str
+        existing_content = self.read_existing_hosts_file()
+        our_blocking_entries = self.build_blocking_entries_set_from_websites(blocking_websites)
+        preserved_lines = self.extract_preserved_entries(existing_content, our_blocking_entries)
+
+        return self.build_hosts_file_content(blocking_websites, preserved_lines)
 
     def set_blocking_level(self, *args, **kwargs):
         return self.block_sites(*args, **kwargs)
@@ -98,14 +206,23 @@ class SiteBlocker:
         self.flush()
 
     def write_to_hosts(self, content, path):
+        """Write to hosts file, backing up first."""
+        self.backup_hosts_file()
         if self.linux:
             write_to_hosts_linux(content, path)
         else:
             write_to_hosts_windows(content, path)
 
     def unblock_all(self):
+        """Unblock all sites, preserving legitimate entries."""
         logger.info("unblocking ALL sites...")
-        self.write_to_hosts(self.prefix, self.hosts_path)
+        existing_content = self.read_existing_hosts_file()
+        all_websites = self.get_all_websites_from_all_levels()
+        our_blocking_entries = self.build_blocking_entries_set_from_websites(all_websites)
+        preserved_lines = self.extract_preserved_entries(existing_content, our_blocking_entries)
+        
+        unblocked_content = self.build_hosts_file_content([], preserved_lines)
+        self.write_to_hosts(unblocked_content, self.hosts_path)
 
     def show_dialog(self, message):
         if self.WSL or not self.linux:

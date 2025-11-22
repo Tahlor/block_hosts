@@ -1,5 +1,6 @@
 backup_cron
 _my_cron
+hosts_backups/
 
 # Passwords and cookies
 password.txt
